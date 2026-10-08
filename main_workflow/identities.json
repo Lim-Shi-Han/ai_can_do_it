@@ -1,0 +1,40 @@
+{
+  "users": [
+    {
+      "name": "alice",
+      "role": "backend engineer",
+      "email": "alice@company-a.example",
+      "atlassian_account_id": "712020:2fd9c37e-660e-49ef-a5f9-e33d7c3a1e5b",
+      "slack_user_id": "",
+      "google_email": "",
+      "can_audit": false
+    },
+    {
+      "name": "bob",
+      "role": "contractor",
+      "email": "bob@contractor.example",
+      "atlassian_account_id": "",
+      "slack_user_id": "",
+      "google_email": "",
+      "can_audit": false
+    },
+    {
+      "name": "sam",
+      "role": "security engineer",
+      "email": "sam@company-a.example",
+      "atlassian_account_id": "",
+      "slack_user_id": "",
+      "google_email": "hackathon_demo_showcase@outlook.com",
+      "can_audit": false
+    },
+    {
+      "name": "carol",
+      "role": "compliance auditor",
+      "email": "carol@company-a.example",
+      "atlassian_account_id": "",
+      "slack_user_id": "",
+      "google_email": "",
+      "can_audit": true
+    }
+  ]
+}

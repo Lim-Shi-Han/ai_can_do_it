@@ -1,0 +1,29 @@
+<html><body>
+<h1>INC-PAY-001 payment metrics report</h1>
+<p><b>Fictional hackathon data.</b> Owner: Payments Analytics. Incident date: 2026-09-28. Reconciled: 2026-09-29 10:00 SGT. Status: Final.</p>
+
+<h2>Summary</h2>
+<p>Between 14:10 and 15:02 SGT, payment-service authorization requests timed out because the database connection pool was saturated. After reconciliation with the payment processor exports, the final count is <b>1,312 timed-out payment attempts</b>. This replaces the provisional estimate of 1,240 published on the Confluence customer impact page.</p>
+<ul>
+<li>Unique customers with at least one timed-out attempt: 871.</li>
+<li>Automatic client retries included in the 1,312: 214.</li>
+<li>Singapore: 1,004 timed-out attempts. Malaysia: 308.</li>
+<li>No duplicate charges were found. Every timed-out attempt either failed cleanly or succeeded on retry.</li>
+</ul>
+
+<h2>Minute-level metrics (SGT)</h2>
+<table border="1">
+<tr><th>Time</th><th>Authorization success rate</th><th>Timeout rate</th><th>DB connection utilization</th></tr>
+<tr><td>14:05 (baseline)</td><td>99.6%</td><td>0.1%</td><td>62%</td></tr>
+<tr><td>14:10</td><td>96.8%</td><td>2.9%</td><td>97%</td></tr>
+<tr><td>14:20</td><td>88.2%</td><td>11.4%</td><td>100%</td></tr>
+<tr><td>14:33 (worst)</td><td>81.4%</td><td>17.9%</td><td>100%</td></tr>
+<tr><td>14:40</td><td>86.0%</td><td>13.5%</td><td>100%</td></tr>
+<tr><td>14:48</td><td>95.1%</td><td>4.6%</td><td>83%</td></tr>
+<tr><td>15:02</td><td>99.5%</td><td>0.2%</td><td>64%</td></tr>
+</table>
+
+<h2>Notes</h2>
+<p>Connection utilization stayed at 100% from 14:16 to 14:44. It fell below the 85% threshold at 14:48, eleven minutes after rollback began. Charts and the raw processor export are attached to this folder by Payments Analytics.</p>
+<p>Use these figures for quantitative impact. The postmortem remains the source for root cause.</p>
+</body></html>

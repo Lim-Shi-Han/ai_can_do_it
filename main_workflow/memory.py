@@ -1,0 +1,70 @@
+import re
+from dataclasses import dataclass, field
+
+TAG_RE = re.compile(r"\[S\d+\]")
+
+
+@dataclass
+class Turn:
+    question: str
+    answer: str
+    cited: list = field(default_factory=list)   # (source, doc_id, version)
+
+
+class Memory:
+    """Chat history for one user. Before every new question, each earlier turn is kept only if
+    the user can still read every source it cited and those sources have not changed since."""
+
+    def __init__(self, user, max_turns=6):
+        self.user = user
+        self.max_turns = max_turns
+        self.turns = []
+        self.incident_id = None   # from the user's own questions, so it survives dropped turns
+
+    def add(self, question, answer, cited, incident_id=None):
+        self.incident_id = incident_id or self.incident_id
+        self.turns.append(Turn(question, answer, cited))
+        self.turns = self.turns[-self.max_turns:]
+
+    def _status(self, user, sources, source_name, doc_id):
+        source = sources.get(source_name)
+        if source is None:
+            return False, None, "source_unavailable"
+        try:
+            if not source.can_access(user, doc_id):
+                return False, None, "access_revoked"
+            return True, str(source.fetch(doc_id).version), "ok"
+        except Exception as exc:
+            return False, None, f"check_failed:{type(exc).__name__}"
+
+    def revalidate(self, user, sources):
+        live, kept, dropped = {}, [], []
+        for turn in self.turns:
+            problems = []
+            for source_name, doc_id, version in turn.cited:
+                key = (source_name, doc_id)
+                if key not in live:
+                    live[key] = self._status(user, sources, source_name, doc_id)
+                allowed, live_version, reason = live[key]
+                if not allowed:
+                    problems.append({"source": source_name, "doc_id": doc_id, "reason": reason})
+                elif live_version != str(version):
+                    problems.append({"source": source_name, "doc_id": doc_id,
+                                     "reason": f"changed:v{version}->v{live_version}"})
+            if problems:
+                dropped.append({"question": turn.question, "problems": problems})
+            else:
+                kept.append(turn)
+        self.turns = kept
+        return dropped
+
+    def messages(self):
+        out = []
+        for turn in self.turns:
+            out.append({"role": "user", "content": turn.question})
+            out.append({"role": "assistant", "content": TAG_RE.sub("", turn.answer)})
+        return out
+
+    def clear(self):
+        self.turns = []
+        self.incident_id = None

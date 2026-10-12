@@ -13,7 +13,19 @@ def _gdrive():
     return GDriveSource()
 
 
-FACTORIES = [_confluence, _gdrive]
+def _jira():
+    # stand-in until sources/jira.py is ready
+    from stand_in_jira_slack.sources import JiraFixtureSource
+    return JiraFixtureSource()
+
+
+def _slack():
+    # stand-in until sources/slack.py is ready
+    from stand_in_jira_slack.sources import SlackFixtureSource
+    return SlackFixtureSource()
+
+
+FACTORIES = [_confluence, _gdrive, _jira, _slack]
 
 
 def load_sources():

@@ -1,10 +1,11 @@
 import hashlib
 import json
+import os
 import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
 
-DEFAULT_DB = Path(__file__).resolve().parent / "audit.db"
+DEFAULT_DB = Path(os.environ.get("AUDIT_DB") or Path(__file__).resolve().parent / "audit.db")
 GENESIS = "0" * 64
 
 
@@ -21,7 +22,7 @@ class AuditLog:
     def __init__(self, path=DEFAULT_DB):
         self.path = Path(path)
         self.head_path = self.path.with_suffix(".head")
-        self.db = sqlite3.connect(self.path)
+        self.db = sqlite3.connect(self.path, timeout=30, isolation_level=None)
         self.db.execute(
             """CREATE TABLE IF NOT EXISTS entries (
                 seq INTEGER PRIMARY KEY,
@@ -36,7 +37,9 @@ class AuditLog:
 
     def append(self, user, event, data):
         data_json = json.dumps(data, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
-        with self.db:
+        # IMMEDIATE takes the write lock before reading the last hash, so concurrent writers queue up
+        self.db.execute("BEGIN IMMEDIATE")
+        try:
             last = self.db.execute("SELECT seq, hash FROM entries ORDER BY seq DESC LIMIT 1").fetchone()
             seq, prev = (last[0] + 1, last[1]) if last else (1, GENESIS)
             ts = now_utc()
@@ -45,9 +48,26 @@ class AuditLog:
                 "INSERT INTO entries (seq, ts, user, event, data, prev_hash, hash) VALUES (?, ?, ?, ?, ?, ?, ?)",
                 (seq, ts, user, event, data_json, prev, digest),
             )
-        # kept outside the table so that deleting the newest rows is also detectable
-        self.head_path.write_text(f"{seq} {digest}\n", encoding="utf-8")
+            # kept outside the table so that deleting the newest rows is also detectable
+            self.head_path.write_text(f"{seq} {digest}\n", encoding="utf-8")
+            self.db.execute("COMMIT")
+        except BaseException:
+            self.db.execute("ROLLBACK")
+            raise
         return seq
+
+    def recent(self, limit=20, events=None):
+        sql = "SELECT seq, ts, user, event, data FROM entries"
+        args = []
+        if events:
+            sql += f" WHERE event IN ({','.join('?' * len(events))})"
+            args += list(events)
+        sql += " ORDER BY seq DESC LIMIT ?"
+        args.append(limit)
+        return [
+            {"seq": seq, "ts": ts, "user": user, "event": event, "data": json.loads(data)}
+            for seq, ts, user, event, data in self.db.execute(sql, args)
+        ]
 
     def verify(self):
         problems = []

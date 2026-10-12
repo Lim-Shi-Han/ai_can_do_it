@@ -39,6 +39,8 @@ python3 confluence/confluence_cli.py list
 
 The update adds the standby-region failover step and increments the Confluence page version. The retrieval system should observe the new version, update time, and text within its stated sync window. The command updates only the runbook; it never resets the other pages.
 
+After the demo, `python3 confluence/confluence_cli.py restore-runbook` republishes the original text. Confluence cannot delete the current version, so this creates a new version with the original content. Both commands do nothing when the page already shows the target text.
+
 ## Later permission demo
 
 Confluence Free cannot restrict individual pages. The security appendix currently contains fictional content and is visible to all users of this site. After upgrading, restrict it to the security user or group and confirm that the contractor cannot view it. The assistant's retrieval layer must check the actual user's current Confluence access before passing text to the model.

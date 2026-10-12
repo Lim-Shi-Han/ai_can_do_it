@@ -1,0 +1,118 @@
+{
+  "note": "Fictional hackathon data. Stand-in for Jira and Slack until the real sources are ready.",
+  "jira": {
+    "projects": {
+      "PAY": {"name": "Payments", "browse": ["ShiHan", "Ivan"]}
+    },
+    "security_levels": {
+      "Security": ["Ivan"]
+    },
+    "issues": [
+      {
+        "key": "PAY-101",
+        "project": "PAY",
+        "summary": "Cap payment-service connection settings and validate them during rollout",
+        "status": "In Progress",
+        "assignee": "ShiHan",
+        "due": "2026-10-15",
+        "labels": ["INC-PAY-001"],
+        "links": ["relates to PAY-103"],
+        "description": "Follow-up from INC-PAY-001. Add an upper bound on max application database connections and reject rollouts that exceed the database pool limit.",
+        "comments": [
+          {"author": "ShiHan", "at": "2026-09-30T02:10:00Z", "text": "Draft change is up. Blocked on DBA review of the new pool limits."},
+          {"author": "Maya Tan", "at": "2026-10-01T01:05:00Z", "text": "DBA review is booked for 2026-10-08."}
+        ],
+        "version": 3,
+        "updated_at": "2026-10-01T01:05:00Z"
+      },
+      {
+        "key": "PAY-102",
+        "project": "PAY",
+        "summary": "Alert earlier on database connection saturation and payment timeouts",
+        "status": "Done",
+        "assignee": "Wei Ling",
+        "due": "2026-10-03",
+        "labels": ["INC-PAY-001"],
+        "links": [],
+        "description": "Follow-up from INC-PAY-001. Page payments on-call when connection utilization exceeds 85% for 3 minutes or the timeout rate exceeds 2%.",
+        "comments": [
+          {"author": "Wei Ling", "at": "2026-10-02T08:30:00Z", "text": "Alerts deployed and tested against a replay of the 2026-09-28 metrics."}
+        ],
+        "version": 4,
+        "updated_at": "2026-10-02T08:30:00Z"
+      },
+      {
+        "key": "PAY-103",
+        "project": "PAY",
+        "summary": "Rehearse failover and revise the recovery runbook",
+        "status": "To Do",
+        "assignee": "Maya Tan",
+        "due": "2026-10-20",
+        "labels": ["INC-PAY-001"],
+        "links": ["relates to PAY-101"],
+        "description": "Follow-up from INC-PAY-001. Run a standby-region failover exercise and update the Confluence recovery runbook with any approved new steps.",
+        "comments": [],
+        "version": 1,
+        "updated_at": "2026-09-29T02:00:00Z"
+      },
+      {
+        "key": "PAY-104",
+        "project": "PAY",
+        "security_level": "Security",
+        "summary": "Review payment-service configuration change controls",
+        "status": "In Progress",
+        "assignee": "Ivan",
+        "due": "2026-10-10",
+        "labels": ["INC-PAY-001", "security"],
+        "links": [],
+        "description": "Security follow-up from INC-PAY-001. The rollout pipeline accepted an unreviewed connection-limit change. No evidence of credential compromise. Decide whether config changes to payment-service need two-person approval.",
+        "comments": [
+          {"author": "Ivan", "at": "2026-09-30T02:40:00Z", "text": "Confirmed the change came from an approved deploy key; the gap is missing review, not unauthorized access."}
+        ],
+        "version": 2,
+        "updated_at": "2026-09-30T02:40:00Z"
+      }
+    ]
+  },
+  "slack": {
+    "channels": {
+      "C01INCPAY": {"name": "payment-incident-001", "private": true, "members": ["ShiHan", "Ivan"]},
+      "C02PAYMNT": {"name": "payments", "private": false, "members": ["ShiHan", "Zhao", "Ivan"]}
+    },
+    "threads": [
+      {
+        "channel": "C01INCPAY",
+        "ts": "1790576100.000000",
+        "messages": [
+          {"user": "ShiHan", "ts": "1790576100.000000", "text": "Opened INC-PAY-001. Payment timeouts spiking since about 14:10, right after the 14:07 connection-limit config rollout."},
+          {"user": "Maya Tan", "ts": "1790576340.000000", "text": "I'm IC. Pausing all payment-service config rollouts now."},
+          {"user": "Dev Kumar", "ts": "1790576520.000000", "text": "DB pool is pinned at 100%. Connection demand is way over the pool limit."},
+          {"user": "Jon Lee", "ts": "1790576760.000000", "text": "can we just fail over to the standby region now? it looks healthy"},
+          {"user": "Maya Tan", "ts": "1790577060.000000", "text": "No. Runbook says roll back the config first. Failover needs IC approval and we're not there yet. Starting rollback at 14:37."},
+          {"user": "ShiHan", "ts": "1790578320.000000", "text": "Utilization back under threshold at 14:48. Watching success rate."}
+        ],
+        "version": 6,
+        "updated_at": "2026-09-28T06:52:00Z"
+      },
+      {
+        "channel": "C01INCPAY",
+        "ts": "1790733900.000000",
+        "messages": [
+          {"user": "ShiHan", "ts": "1790733900.000000", "text": "INC-PAY-001 follow-up status: PAY-101 is blocked on DBA review of the new pool limits. PAY-102 alerts are nearly done."},
+          {"user": "Dev Kumar", "ts": "1790736000.000000", "text": "DBA review of the pool limits is booked for 2026-10-08. PAY-101 can't merge before then."}
+        ],
+        "version": 2,
+        "updated_at": "2026-09-30T02:40:00Z"
+      },
+      {
+        "channel": "C02PAYMNT",
+        "ts": "1790816400.000000",
+        "messages": [
+          {"user": "Maya Tan", "ts": "1790816400.000000", "text": "Reminder: payment-service config changes are frozen until PAY-101 lands. Ask in the incident channel if you need an exception."}
+        ],
+        "version": 1,
+        "updated_at": "2026-10-01T01:00:00Z"
+      }
+    ]
+  }
+}

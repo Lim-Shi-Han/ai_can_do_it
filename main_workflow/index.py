@@ -75,6 +75,12 @@ class Index:
         args.append(limit)
         return [Candidate(*row) for row in self.db.execute(sql, args)]
 
+    def all_docs(self):
+        return [
+            Candidate(*row)
+            for row in self.db.execute("SELECT source, doc_id, title, container, version FROM docs ORDER BY source, title")
+        ]
+
     def has_source(self, source):
         return self.db.execute("SELECT 1 FROM sync_state WHERE source = ?", (source,)).fetchone() is not None
 

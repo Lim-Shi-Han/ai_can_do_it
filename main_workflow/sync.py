@@ -41,16 +41,20 @@ def sync_source(index, source, full=False):
 
 
 def run_once(index, sources, audit, full=False):
+    results = []
     for source in sources.values():
         try:
             updated, removed = sync_source(index, source, full)
         except Exception as exc:
             print(f"{now_utc()} {source.name}: sync failed: {exc}", file=sys.stderr)
+            results.append({"source": source.name, "error": str(exc)[:200]})
             continue
+        results.append({"source": source.name, "updated": updated, "removed": removed})
         if updated or removed:
             audit.append("system", "sync", {"source": source.name, "updated": updated, "removed": removed, "full": full})
         detail = ", ".join(f"{u['doc_id']} v{u['version']}" for u in updated)
         print(f"{now_utc()} {source.name}: {len(updated)} updated, {len(removed)} removed" + (f" ({detail})" if detail else ""))
+    return results
 
 
 def main():
@@ -64,7 +68,7 @@ def main():
     index = Index()
     if args.command == "status":
         for row in index.status():
-            print(f"{row['source']:<11} {row['docs']:>4} docs  last run {row['last_run']}  "
+            print(f"{row['source']:<14} {row['docs']:>4} docs  last run {row['last_run']}  "
                   f"cursor {row['cursor']}  last changes {row['last_changes']}")
         return
 

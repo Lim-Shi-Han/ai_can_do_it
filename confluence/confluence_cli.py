@@ -128,6 +128,26 @@ class Confluence:
         return base.rstrip("/") + webui if webui else f"{self.site}/wiki/pages/viewpage.action?pageId={page['id']}"
 
 
+def publish_runbook(api, pages, title, html, message):
+    """Publish html as a new runbook version unless the page already shows that text.
+    Confluence normalizes storage markup, so compare the visible text, not the raw body."""
+    matches = [p for p in pages if p["title"] == title]
+    if len(matches) != 1:
+        raise RuntimeError(f"Expected exactly one runbook, found {len(matches)}")
+    current = api.page(matches[0]["id"])
+    if storage_to_text(current.get("body", {}).get("storage", {}).get("value")) == storage_to_text(html):
+        return f"Runbook already shows this text (version {current['version']['number']})"
+    payload = {
+        "id": current["id"],
+        "status": "current",
+        "title": title,
+        "body": {"representation": "storage", "value": html},
+        "version": {"number": current["version"]["number"] + 1, "message": message},
+    }
+    updated = api.request("PUT", f"/wiki/api/v2/pages/{current['id']}", payload=payload)
+    return f"Runbook is now version {updated['version']['number']} ({message.split(': ', 1)[-1]})"
+
+
 def save_manifest(api, space_id, pages, seed):
     by_title = {p["title"]: p for p in pages}
     entries = []
@@ -158,7 +178,7 @@ def save_manifest(api, space_id, pages, seed):
 def main():
     load_local_env()
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=["preview", "check", "seed", "list", "read", "update-runbook"])
+    parser.add_argument("command", choices=["preview", "check", "seed", "list", "read", "update-runbook", "restore-runbook"])
     parser.add_argument("page_id", nargs="?", help="Required for read")
     args = parser.parse_args()
     seed = load_seed()
@@ -192,28 +212,13 @@ def main():
             print(f"Created: {item['title']} ({api.page_url(page)})")
         pages = api.pages(space_id)
 
-    if args.command == "update-runbook":
-        title = seed["runbook_update"]["title"]
-        matches = [p for p in pages if p["title"] == title]
-        if len(matches) != 1:
-            raise RuntimeError(f"Expected exactly one runbook, found {len(matches)}")
-        current = api.page(matches[0]["id"])
-        new_body = seed["runbook_update"]["html"]
-        if current.get("body", {}).get("storage", {}).get("value") == new_body:
-            print("Runbook already contains the demo update")
+    if args.command in {"update-runbook", "restore-runbook"}:
+        if args.command == "update-runbook":
+            html, message = seed["runbook_update"]["html"], "Hackathon freshness demo: approved standby-region step"
         else:
-            payload = {
-                "id": current["id"],
-                "status": "current",
-                "title": title,
-                "body": {"representation": "storage", "value": new_body},
-                "version": {
-                    "number": current["version"]["number"] + 1,
-                    "message": "Hackathon freshness demo: approved standby-region step",
-                },
-            }
-            updated = api.request("PUT", f"/wiki/api/v2/pages/{current['id']}", payload=payload)
-            print(f"Updated runbook to version {updated['version']['number']}")
+            html = next(p["html"] for p in seed["pages"] if p["slug"] == "runbook")
+            message = "Hackathon demo reset: restore original runbook"
+        print(publish_runbook(api, pages, seed["runbook_update"]["title"], html, message))
         pages = api.pages(space_id)
 
     if args.command == "read":

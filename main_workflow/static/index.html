@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Corporate Chat</title>
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="brand">Corporate Chat with Dynamic Access<small>Answers only from what you can see, right now</small></div>
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" data-tab="chat" aria-selected="true">Chat</button>
+      <button class="tab" role="tab" data-tab="audit" aria-selected="false" hidden>Audit</button>
+    </div>
+    <div class="spacer"></div>
+    <a href="/console" target="_blank" rel="noopener" title="Simulates platform admins changing access or content">Platform console ↗</a>
+    <div>
+      <label class="signin">Demo sign-in (stands in for SSO)
+        <select id="user"></select>
+      </label>
+      <div class="accounts" id="accounts" style="margin-top:6px"></div>
+    </div>
+  </header>
+
+  <main class="main" id="chatView">
+    <div class="column" id="chat"></div>
+  </main>
+
+  <main class="main" id="auditView" hidden>
+    <div class="column">
+      <form class="filters" id="auditForm">
+        <label>User<select name="user"><option value="">Anyone</option></select></label>
+        <label>Platform<select name="source">
+          <option value="">Any</option><option value="confluence">Confluence</option><option value="gdrive">Drive</option>
+          <option value="jira-fixture">Jira (stand-in)</option><option value="slack-fixture">Slack (stand-in)</option>
+        </select></label>
+        <label>Space / project / channel / folder<input name="container" placeholder="e.g. PAYOPS"></label>
+        <label>Document ID<input name="doc" placeholder="e.g. 393217"></label>
+        <label>Event<select name="event">
+          <option value="">Any</option><option value="query">query</option><option value="context_dropped">context_dropped</option>
+          <option value="sync">sync</option><option value="sign_in">sign_in</option><option value="audit_query">audit_query</option>
+        </select></label>
+        <label>Since<select name="since">
+          <option value="1h">Last hour</option><option value="1d" selected>Last 24 hours</option>
+          <option value="7d">Last 7 days</option><option value="30d">Last 30 days</option><option value="">All time</option>
+        </select></label>
+      </form>
+      <div class="row-actions">
+        <button class="btn primary" id="auditSearch">Search</button>
+        <button class="btn" id="auditVerify">Verify chain</button>
+        <span id="verifyResult"></span>
+        <span class="spacer"></span>
+        <span class="meta" id="auditCount"></span>
+      </div>
+      <div class="entries" id="entries"></div>
+    </div>
+  </main>
+
+  <footer class="composer" id="composer">
+    <div class="column">
+      <form id="askForm">
+        <input id="question" autocomplete="off" placeholder="Ask about INC-PAY-001…">
+        <button class="btn primary" id="askBtn">Ask</button>
+        <button class="btn" type="button" id="resetBtn" title="Start a new chat">Reset</button>
+      </form>
+      <div class="syncbar" id="syncbar"></div>
+    </div>
+  </footer>
+</div>
+<script src="/static/common.js"></script>
+<script src="/static/assistant.js"></script>
+</body>
+</html>

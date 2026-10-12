@@ -20,7 +20,7 @@ from cryptography.hazmat.primitives.asymmetric import padding
 ROOT = Path(__file__).resolve().parent
 SEED = ROOT / "seed_report.html"
 MANIFEST = ROOT / "file_manifest.json"
-IDENTITIES = ROOT.parent / "main_workflow" / "identities.json"
+IDENTITIES = Path(os.environ.get("IDENTITIES_FILE") or ROOT.parent / "main_workflow" / "identities.json")
 API = "https://www.googleapis.com/drive/v3"
 UPLOAD_API = "https://www.googleapis.com/upload/drive/v3"
 REPORT_TITLE = "INC-PAY-001 payment metrics report"

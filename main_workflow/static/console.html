@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Platform Console</title>
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">Source platform console<small>Corporate Chat with Dynamic Access · demo</small></div>
+  <div class="spacer"></div>
+  <a href="/" target="_blank" rel="noopener">Open the chat ↗</a>
+</header>
+<div class="console-banner">
+  <b>SOURCE PLATFORM ADMIN.</b> These controls simulate an admin changing access or content inside Slack, Jira, Drive, and Confluence.
+  The chat never grants or removes access; it only reads each platform's permissions at the moment a question is asked.
+</div>
+
+<div class="console">
+  <div class="stack">
+    <section class="panel">
+      <header>
+        <h3>Who can open what (checked live on each platform)</h3>
+        <span class="spacer"></span>
+        <span class="meta" id="gridChecked"></span>
+        <button class="btn" id="gridRefresh">Refresh</button>
+      </header>
+      <div class="content grid-wrap"><table class="grid" id="grid"><tr><td class="meta">Loading…</td></tr></table></div>
+    </section>
+
+    <section class="panel">
+      <header><h3>Gate decisions, latest questions</h3><span class="spacer"></span><span class="meta">from the audit trail</span></header>
+      <div class="content"><ul class="feed" id="gateFeed"></ul></div>
+    </section>
+  </div>
+
+  <div class="stack">
+    <section class="panel">
+      <header><h3>Actions</h3></header>
+      <div class="content">
+        <div class="action">
+          <h4><span class="chip p-slack-fixture"><span class="dot"></span>Slack <span class="tag">stand-in</span></span> channel membership</h4>
+          <div class="controls">
+            <select id="slackUser"></select><select id="slackChannel"></select>
+            <button class="btn danger" data-act="slack_access" data-grant="0">Remove</button>
+            <button class="btn" data-act="slack_access" data-grant="1">Add</button>
+          </div>
+          <div class="note" id="slackMembers"></div>
+        </div>
+        <div class="action">
+          <h4><span class="chip p-jira-fixture"><span class="dot"></span>Jira <span class="tag">stand-in</span></span> project or security level</h4>
+          <div class="controls">
+            <select id="jiraUser"></select><select id="jiraTarget"></select>
+            <button class="btn danger" data-act="jira_access" data-grant="0">Remove</button>
+            <button class="btn" data-act="jira_access" data-grant="1">Add</button>
+          </div>
+          <div class="note" id="jiraMembers"></div>
+          <div class="controls" style="margin-top:6px">
+            <select id="jiraIssue"></select><select id="jiraStatus"></select>
+            <button class="btn" data-act="jira_status">Set status</button>
+          </div>
+        </div>
+        <div class="action" id="driveAction">
+          <h4><span class="chip p-gdrive"><span class="dot"></span>Drive</span> folder INC-PAY-001</h4>
+          <div class="controls">
+            <select id="driveUser"></select>
+            <button class="btn danger" data-act="drive_access" data-grant="0">Unshare</button>
+            <button class="btn" data-act="drive_access" data-grant="1">Share as viewer</button>
+          </div>
+          <div class="note">The user needs a Google account in identities.json.</div>
+        </div>
+        <div class="action">
+          <h4><span class="chip p-confluence"><span class="dot"></span>Confluence</span> PAYOPS space</h4>
+          <div class="controls">
+            <button class="btn" data-act="runbook_update">Publish runbook update (adds failover step)</button>
+            <button class="btn" data-act="runbook_restore">Restore original runbook</button>
+          </div>
+          <div class="note">Restore republishes the original text as a new version; Confluence cannot delete the current version, so the version number keeps counting up. Page restrictions need Confluence Standard; set them in Confluence for now.</div>
+        </div>
+        <div class="action">
+          <h4><span class="chip"><span class="dot"></span>Identity provider</span> auditor role</h4>
+          <div class="controls">
+            <select id="auditUser"></select>
+            <button class="btn danger" data-act="audit_role" data-grant="0">Revoke auditor role</button>
+            <button class="btn" data-act="audit_role" data-grant="1">Grant auditor role</button>
+          </div>
+          <div class="note">This role belongs to the chat's own sign-in setup, not to a source platform. Current auditors: <span id="auditors"></span></div>
+        </div>
+        <div class="action">
+          <div class="controls">
+            <button class="btn primary" data-act="sync_now">Sync now</button>
+            <button class="btn" data-act="reset">Reset rehearsal</button>
+          </div>
+          <div class="note">Reset restores the stand-in data and the original runbook text, re-shares Drive with ShiHan if ShiHan has a Google account, and clears every chat.</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <header><h3>Activity</h3></header>
+      <div class="content"><ul class="feed" id="activity"></ul></div>
+    </section>
+  </div>
+</div>
+<script src="/static/common.js"></script>
+<script src="/static/console.js"></script>
+</body>
+</html>

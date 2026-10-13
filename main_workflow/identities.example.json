@@ -1,0 +1,58 @@
+{
+  "users": [
+    {
+      "name": "ShiHan",
+      "role": "payments backend engineer (on-call)",
+      "email": "shihan@company-a.example",
+      "atlassian_account_id": "60af379e39ab6f007134280a",
+      "slack_user_id": "",
+      "google_email": "shihan@company-a.example",
+      "can_audit": false
+    },
+    {
+      "name": "Zhao",
+      "role": "CTO",
+      "email": "zhao@company-a.example",
+      "atlassian_account_id": "712020:2fd9c37e-660e-49ef-a5f9-e33d7c3a1e5b",
+      "slack_user_id": "",
+      "google_email": "zhao@company-a.example",
+      "can_audit": false
+    },
+    {
+      "name": "Ivan",
+      "role": "security engineer",
+      "email": "ivan@company-a.example",
+      "atlassian_account_id": "712020:8b87dd96-b4e3-4425-9fae-54ba74618da9",
+      "slack_user_id": "",
+      "google_email": "ivan@company-a.example",
+      "can_audit": false
+    },
+    {
+      "name": "Elson",
+      "role": "compliance officer",
+      "email": "elson@company-a.example",
+      "atlassian_account_id": "712020:39ccba4e-1b1a-4b85-9213-800c529d51de",
+      "slack_user_id": "",
+      "google_email": "elson@company-a.example",
+      "can_audit": true
+    },
+    {
+      "name": "Sheldon",
+      "role": "finance analyst (payments reconciliation)",
+      "email": "sheldon@company-a.example",
+      "atlassian_account_id": "627c634a8dd5f3006855e82a",
+      "slack_user_id": "",
+      "google_email": "sheldon@company-a.example",
+      "can_audit": false
+    },
+    {
+      "name": "Terrance",
+      "role": "external contractor (third-party vendor)",
+      "email": "terrance@vendor.example",
+      "atlassian_account_id": "712020:6a555ea5-3534-4188-b99b-412c0d15cfb7",
+      "slack_user_id": "",
+      "google_email": "terrance@vendor.example",
+      "can_audit": false
+    }
+  ]
+}

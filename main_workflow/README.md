@@ -45,7 +45,11 @@
 
 **Corporate Chat with Dynamic Access**: permission-aware question answering over Confluence, Jira, Slack, and Google Drive, with a hash-chained audit trail.
 
-Run everything from the repository root. Needs the same `.env` as `confluence/` and the local vLLM server.
+Run everything from the repository root. Needs the same `.env` as `confluence/`, the local vLLM server, and `main_workflow/identities.json`. That file is not in Git: get it from a teammate, or start from the placeholder copy:
+
+```bash
+cp main_workflow/identities.example.json main_workflow/identities.json   # then fill in real Google emails
+```
 
 ## Web UI
 
@@ -125,7 +129,7 @@ python3 -m main_workflow.cli audit verify
 | `audit.py` | Hash-chained SQLite log with `verify` and `query`. A separate head file catches deletion of the newest entries. |
 | `web.py`, `static/` | Web UI: JSON API over the same pipeline, background sync thread, per-tab chat sessions, and the console actions (which call the existing `fixture_cli.py`, `gdrive_cli.py`, and `confluence_cli.py`, or change the auditor role in `identities.json`). |
 | `cli.py` | `ask`, `chat` (`/as <user>` switches user), `audit query`, `audit verify`. |
-| `identities.json` | The four demo users and their accounts on each platform. |
+| `identities.json` | The six demo users and their accounts on each platform. Ignored by Git because it holds real email addresses and the console rewrites it; copy `identities.example.json` (placeholder emails) or get the real file from a teammate. |
 
 ## Flow
 

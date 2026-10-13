@@ -20,7 +20,7 @@ Use an established Google account, and keep company names out of the project nam
    GDRIVE_FOLDER_ID=<FOLDER_ID>
    ```
 
-5. **Users.** Put each user's Google account in `google_email` in `main_workflow/identities.json`. Each user needs a separate real Google account; Gmail plus addresses map to the same account. The folder owner always has access, so give ownership to the user who should see everything (Zhao, the CTO), never to the contractor (Terrance).
+5. **Users.** Put each user's Google account in `google_email` in `main_workflow/identities.json` (not in Git; see `identities.example.json`). Each user needs a separate real Google account; Gmail plus addresses map to the same account. The folder owner always has access, so give ownership to the user who should see everything (Zhao, the CTO), never to the contractor (Terrance).
 
 ## Seed and check
 

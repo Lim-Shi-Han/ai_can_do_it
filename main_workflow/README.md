@@ -12,22 +12,24 @@
 
 **Sources (Phase B)**
 - [ ] Jira source `sources/jira.py`: project `PAY`, issues PAY-101 to PAY-104 labelled `INC-PAY-001`, PAY-104 at the Security issue-security level
-- [ ] Slack source `sources/slack.py`: private `#payment-incident-001` (ShiHan and Ivan, not Zhao) and public `#payments`, including one unverified "just fail over now?" message
+- [ ] Slack source `sources/slack.py`: private `#payment-incident-001` (ShiHan, Ivan, and Zhao; not Sheldon or Terrance) and public `#payments`, including one unverified "just fail over now?" message
 - [x] Stand-in Jira and Slack sources in `stand_in_jira_slack/` for rehearsals
 - [ ] Swap the stand-ins for the real sources in `sources/__init__.py`
 - [ ] Confirm the Jira keys, Slack channel, and Drive file title used in `confluence/seed_pages.json` with the source owners
 
 **Accounts and permissions**
 - [ ] Upgrade Confluence and Jira to Standard (trial), so pages and issues can be restricted
-- [ ] Restrict the Confluence security appendix (page 393217) to Ivan
-- [ ] Create demo accounts and fill in `identities.json`: Atlassian account IDs for Zhao, Ivan, and Elson; Slack user IDs for everyone; a Google account for ShiHan
-- [ ] `python3 gdrive/gdrive_cli.py share ShiHan` once ShiHan has a Google account; keep Zhao unshared
-- [ ] Re-map ShiHan from the seeding account to a separate Atlassian account
+- [ ] Restrict Jira and Confluence to match the Identities table below: all six accounts can currently open everything in Jira `PAY` and Confluence `PAYOPS` (checked 2026-10-13)
+- [ ] Restrict the Confluence security appendix (page 393217) to Ivan and Zhao (Zhao's account is also the system's API account, which must keep read access)
+- [x] Create demo accounts and fill in `identities.json`: Atlassian account IDs and Google emails for all six users
+- [ ] Slack user IDs in `identities.json` once real Slack exists
+- [ ] `python3 gdrive/gdrive_cli.py share ShiHan Ivan Sheldon`; keep Terrance unshared (Zhao's Google account owns the folder)
+- [x] Re-map ShiHan from the seeding account to a separate Atlassian account
 
 **Demo (Phase D)**
 - [ ] Rehearse the freshness demo: console **Publish runbook update**, then ask again in the same chat and check that the new version and failover step are cited; **Restore original runbook** afterwards
 - [ ] Rehearse revocation: console **Remove** ShiHan from `#payment-incident-001` (or from Jira project `PAY`), then ask a follow-up in the same chat
-- [ ] Rehearse the contractor case as Zhao and compare with Ivan
+- [ ] Rehearse the contractor case as Terrance and compare with Ivan
 - [ ] Rehearse the audit inquiry as Elson, then edit a row and verify; also revoke Elson's auditor role from the console
 - [ ] Change "yesterday's outage" in the demo question to "INC-PAY-001", or re-date the seed data to the day before the demo
 - [ ] Architecture diagram and trust-boundary diagram, with key design trade-offs
@@ -84,10 +86,10 @@ Before each run:
 
 Then:
 
-1. **Unified query.** Chat as ShiHan: ask the main INC-PAY-001 question. Citations come from Confluence, Jira, and Slack (Drive too, once ShiHan has a Google account).
+1. **Unified query.** Chat as ShiHan: ask the main INC-PAY-001 question. Citations come from Confluence, Jira, and Slack (Drive too, once the folder is shared with ShiHan).
 2. **Freshness.** Console: **Publish runbook update**, then **Sync now**. Ask again in the same chat: the answer cites the new runbook version and the failover step, and the earlier answer is removed because its runbook version is out of date.
 3. **Revocation.** Console: check the Slack card shows ShiHan as a member of `#payment-incident-001`, then click **Remove**. Ask a follow-up in the same chat: the "earlier answers were removed" banner appears, the earlier Slack answer is blanked, and no Slack citations appear. The console shows the DENY decisions. To give access back mid-demo, use **Add**, not Reset rehearsal (which clears every chat).
-4. **Restricted user.** Chat as Zhao, then as Ivan, with the same security question. Zhao gets nothing restricted and no hint that anything was hidden; Ivan sees PAY-104.
+4. **Restricted user.** Chat as Terrance, then as Ivan, with the same security question. Terrance gets nothing restricted and no hint that anything was hidden; Ivan sees PAY-104.
 5. **Audit inquiry.** Chat as Elson: Audit tab, filter on ShiHan, **Verify chain**. Edit a row with `sqlite3` in a terminal (see Audit trail below), then verify again: it turns red. Optionally, console: **Revoke auditor role** for Elson; the next audit search is refused and the Audit tab disappears.
 6. Console: **Reset rehearsal** (or **Restore original runbook**) at the end. Confluence cannot delete the current version, so the original text comes back as a new version.
 
@@ -100,7 +102,7 @@ python3 -m main_workflow.sync                         # keep running in another 
 python3 -m main_workflow.sync status
 
 python3 -m main_workflow.cli ask --as ShiHan "What caused the INC-PAY-001 outage, what is the latest recovery procedure, and what work remains?"
-python3 -m main_workflow.cli chat --as ShiHan          # /as Zhao switches user, /reset clears, /quit leaves
+python3 -m main_workflow.cli chat --as ShiHan          # /as Terrance switches user, /reset clears, /quit leaves
 
 python3 -m main_workflow.cli audit query --as Elson --user ShiHan --container PAYOPS --since 30d
 python3 -m main_workflow.cli audit query --as Elson --doc 393217    # who retrieved this page
@@ -167,14 +169,18 @@ rm -f main_workflow/audit.db main_workflow/audit.head
 
 ## Identities
 
-| User | Role | Confluence | Drive | Jira / Slack (stand-ins) | Auditor |
+| User | Role | Atlassian account | Drive | Jira / Slack (stand-ins) | Auditor |
 |---|---|---|---|---|---|
-| ShiHan | backend engineer | the account that seeded PAYOPS | none | PAY-101 to PAY-103; both channels | no |
-| Zhao | contractor | none | none | `#payments` only | no |
-| Ivan | security engineer | none | folder owner | PAY-101 to PAY-104; both channels | no |
-| Elson | compliance auditor | none | none | none | yes |
+| ShiHan | payments backend engineer (on-call) | Lim Shi Han | reader (to share) | PAY-101 to PAY-103; both channels | no |
+| Zhao | CTO | Zhao Heng: site admin, also the system's API account | folder owner | PAY-101 to PAY-104; both channels | no |
+| Ivan | security engineer | Ivan | reader (to share) | PAY-101 to PAY-104; both channels | no |
+| Elson | compliance officer | Elson Chan Chong Jun | none | none | yes |
+| Sheldon | finance analyst (payments reconciliation) | Sheldon | reader (to share) | `#payments` only | no |
+| Terrance | external contractor (third-party vendor) | Terrance | never share | `#payments` only | no |
 
-Users without an account on a platform are denied everything there by default. Stand-in access is set in `stand_in_jira_slack/seed.json`, not here. Fill in the Atlassian account IDs, Slack user IDs, and Google emails once the demo accounts exist.
+Confluence follows the same split: `PAYOPS` for ShiHan, Zhao, Ivan, and Sheldon; the security appendix for Ivan and Zhao only. Elson reads the audit trail but no source content, and is the only auditor.
+
+Users without an account on a platform are denied everything there by default. Stand-in access is set in `stand_in_jira_slack/seed.json`, not here. Every user has an Atlassian account and a Google email; Slack user IDs are still empty. On the real platforms, access comes from Jira roles, Confluence space and page permissions, and Drive sharing, which do not match this table yet (see below).
 
 # Current status: stand-ins and gaps
 
@@ -185,18 +191,18 @@ Users without an account on a platform are denied everything there by default. S
 | Jira | Stand-in reading a local JSON file (`stand_in_jira_slack/`) | Build `sources/jira.py`; issue-level security needs Jira Standard |
 | Slack | Stand-in reading a local JSON file (`stand_in_jira_slack/`) | Build `sources/slack.py` with a bot token and real channels |
 | Sign-in | A dropdown stands in for single sign-on | Fine for a hackathon; present it as a trade-off |
-| ShiHan | Mapped to the admin account that seeded PAYOPS, which is also the system's API account | Invite a separate Atlassian account for ShiHan |
-| Zhao, Ivan, Elson | No Atlassian accounts, so Confluence denies them everything by default | Invite accounts and fill in `identities.json` |
-| Drive users | ShiHan has no Google account; Ivan's Google account owns the folder, and an owner cannot be unshared | Use a teammate's existing Google account for ShiHan |
+| Zhao | Zhao's account is also the system's API account (site admin, seeded PAYOPS) | Fine for a hackathon because Zhao, the CTO, may see everything; production would use a dedicated non-human service account |
+| Atlassian permissions | All six accounts can open everything in Jira `PAY` and Confluence `PAYOPS` (checked 2026-10-13) | Restrict Jira and Confluence to match the Identities table |
+| Drive users | Zhao's Google account owns the folder; ShiHan, Ivan, and Sheldon are not shared yet | `python3 gdrive/gdrive_cli.py share ShiHan Ivan Sheldon`; never share with Terrance |
 | Slack user IDs | Empty; the stand-ins match users by name | Needed once real Slack exists |
 | Platform console | Simulates platform admins | Correct by design: it represents the platforms, not the chat |
 | Stand-in citation links | `fixture://…`, not clickable | Real sources return real URLs |
 
 ## Missing: affects the demo
 
-1. **Confluence revocation.** The console has no Confluence access control yet. It needs separate Atlassian accounts first (above).
-2. **The security appendix is not hidden.** ShiHan can see it and has cited it, so scenario 3 currently fails on Confluence. It needs a real ShiHan account plus a page restriction. The API accepted a restriction on a test page, but enforcement against a second account is not proven yet.
-3. **Real Drive revocation.** Blocked until ShiHan has a Google account.
+1. **Confluence revocation.** The console has no Confluence access control yet. Every user now has a separate Atlassian account, so this is unblocked.
+2. **The security appendix is not hidden.** ShiHan can see it and has cited it, so scenario 3 currently fails on Confluence. ShiHan now has a separate account; the page restriction is still needed. The API accepted a restriction on a test page, but enforcement against a second account is not proven yet.
+3. **Real Drive revocation.** ShiHan now has a Google email; share the folder with ShiHan first.
 4. **"Yesterday" in the demo question.** The seed data is dated 2026-09-28. Ask about "INC-PAY-001" instead, or re-date the seed data.
 5. **No automated scenario check in the repo.** The scenarios are checked by hand with the demo flow above.
 

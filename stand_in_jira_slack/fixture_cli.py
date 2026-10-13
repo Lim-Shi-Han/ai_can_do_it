@@ -33,10 +33,10 @@ def channel_id(state, name):
 
 def cmd_status(args):
     people = users()
-    print(f"{'document':<62}" + "".join(f"{u['name']:>7}" for u in people))
+    print(f"{'document':<62}" + "".join(f"{u['name']:>9}" for u in people))
     for source in (JiraFixtureSource(), SlackFixtureSource()):
         for c in source.changes_since(None):
-            row = "".join(f"{'✓' if source.can_access(u, c.doc_id) else '·':>7}" for u in people)
+            row = "".join(f"{'✓' if source.can_access(u, c.doc_id) else '·':>9}" for u in people)
             label = f"{source.name.split('-')[0]} v{c.version} {c.title}"
             print(f"{label[:61]:<62}{row}")
 

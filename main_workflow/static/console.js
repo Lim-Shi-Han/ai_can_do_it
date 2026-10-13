@@ -20,7 +20,7 @@ async function loadOptions() {
   options = o;
   fill("slackUser", o.users, keep ? keep.su : "ShiHan");
   fill("slackChannel", o.channels, keep ? keep.sc : "payment-incident-001");
-  fill("jiraUser", o.users, keep ? keep.ju : "Zhao");
+  fill("jiraUser", o.users, keep ? keep.ju : "Terrance");
   fill("jiraTarget", o.jira_targets, keep ? keep.jt : "PAY");
   fill("jiraIssue", o.issues, "PAY-101");
   fill("jiraStatus", o.statuses, "Done");

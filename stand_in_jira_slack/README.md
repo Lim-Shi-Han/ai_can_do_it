@@ -15,12 +15,12 @@ They are registered as `jira-fixture` and `slack-fixture`, so every citation and
 
 ## Permissions in the seed
 
-| | ShiHan | Zhao | Ivan | Elson |
-|---|---|---|---|---|
-| PAY-101, PAY-102, PAY-103 | ✓ | | ✓ | |
-| PAY-104 (security level) | | | ✓ | |
-| `#payment-incident-001` threads | ✓ | | ✓ | |
-| `#payments` thread | ✓ | ✓ | ✓ | |
+| | ShiHan | Zhao | Ivan | Elson | Sheldon | Terrance |
+|---|---|---|---|---|---|---|
+| PAY-101, PAY-102, PAY-103 | ✓ | ✓ | ✓ | | | |
+| PAY-104 (security level) | | ✓ | ✓ | | | |
+| `#payment-incident-001` threads | ✓ | ✓ | ✓ | | | |
+| `#payments` thread | ✓ | ✓ | ✓ | | ✓ | ✓ |
 
 Jira access needs browse permission on the project and, for PAY-104, membership of the `Security` level. Slack access is channel membership.
 
@@ -34,7 +34,7 @@ Run from the repository root.
 python3 stand_in_jira_slack/fixture_cli.py status                                   # access grid
 python3 stand_in_jira_slack/fixture_cli.py revoke ShiHan slack payment-incident-001  # revocation demo
 python3 stand_in_jira_slack/fixture_cli.py grant ShiHan slack payment-incident-001
-python3 stand_in_jira_slack/fixture_cli.py revoke Zhao jira PAY                       # project or security level
+python3 stand_in_jira_slack/fixture_cli.py revoke ShiHan jira PAY                     # project or security level
 python3 stand_in_jira_slack/fixture_cli.py set-status PAY-101 Done --comment "DBA approved, merged"
 python3 stand_in_jira_slack/fixture_cli.py post payment-incident-001 ShiHan "PAY-101 unblocked" --thread 1790733900.000000
 python3 stand_in_jira_slack/fixture_cli.py reset                                    # back to the seed

@@ -3,7 +3,7 @@
 | Phase | Work | Status |
 |---|---|---|
 | A | `sources/base.py`, `audit.py`, `gate.py`, `pipeline.py`, plus the Confluence source: the full loop working on Confluence only | ✅ Done |
-| B | Jira, Slack, and Drive sources against the interface | 🟡 In progress: Drive done; Jira and Slack running on stand-ins (`stand_in_jira_slack/`) |
+| B | Jira, Slack, and Drive sources against the interface | 🟡 In progress: Drive and Slack done; Jira running on a stand-in (`stand_in_jira_slack/`) |
 | C | `index.py`, `sync.py`, `memory.py`: scenarios 2 and 4 | ✅ Done (live freshness rehearsal still to run) |
 | D | Run the demo script end to end, then the architecture and trust-boundary diagrams | 🟡 In progress: demo flow runs in the web UI; rehearsal, diagrams, and worked examples to do |
 | E (optional) | A small web UI with a user switcher, replacing the command-line chat | ✅ Done (`python3 -m main_workflow.web`) |
@@ -12,9 +12,10 @@
 
 **Sources (Phase B)**
 - [ ] Jira source `sources/jira.py`: project `PAY`, issues PAY-101 to PAY-104 labelled `INC-PAY-001`, PAY-104 at the Security issue-security level
-- [ ] Slack source `sources/slack.py`: private `#payment-incident-001` (ShiHan, Ivan, and Zhao; not Sheldon or Terrance) and public `#payments`, including one unverified "just fail over now?" message
+- [x] Slack source `sources/slack.py` and the `/brain` bot `slack_bot.py` (see Slack below)
+- [ ] Slack workspace: create the Brain app (see Slack below), then follow `slack_demo/README.md` to log in Zhao and ShiHan and run `slack_cli.py reset`, which creates the channels, sets members, invites the bot, and posts the threads
 - [x] Stand-in Jira and Slack sources in `stand_in_jira_slack/` for rehearsals
-- [ ] Swap the stand-ins for the real sources in `sources/__init__.py`
+- [ ] Swap the Jira stand-in for the real source in `sources/__init__.py` (Slack switches itself once `SLACK_BOT_TOKEN` is set)
 - [ ] Confirm the Jira keys, Slack channel, and Drive file title used in `confluence/seed_pages.json` with the source owners
 
 **Accounts and permissions**
@@ -68,6 +69,8 @@ Every server start resets the stand-in Jira and Slack data to `stand_in_jira_sla
 
 Open the two pages side by side for the demo. The server binds to `127.0.0.1` only; the console has no login, so do not expose it.
 
+When Slack is configured, the server also runs the Slack bot (see Slack below), and the console's Slack card changes real channel membership through `slack_demo/slack_cli.py`.
+
 ### Chat behaviour worth knowing
 
 - A page reload or the Back button keeps the same chat (per browser tab). A new chat starts only when you switch user, click **Reset**, restart the server, or click **Reset rehearsal** in the console.
@@ -119,6 +122,8 @@ python3 -m main_workflow.cli audit verify
 |---|---|
 | `sources/base.py` | The interface every platform implements: `search`, `can_access`, `fetch`, `changes_since`. |
 | `sources/confluence.py` | Confluence source. Reuses the client in `confluence/confluence_cli.py` and adds search and a live per-user permission check. |
+| `sources/slack.py` | Slack source. One thread is one document; access is live channel membership. Reads only channels the bot is in, never DMs. Falls back to the stand-in until `SLACK_BOT_TOKEN` is set. |
+| `slack_bot.py` | The `/brain` command and Slack's message and membership events, over Socket Mode. Started by `web.py`. |
 | `../stand_in_jira_slack/` | Stand-in Jira and Slack sources (`jira-fixture`, `slack-fixture`) until the real ones are ready. See its README. |
 | `sources/gdrive.py` | Google Drive source. Reuses the client in `gdrive/gdrive_cli.py` with the read-only scope. Skipped with a warning until Drive is configured in `.env`. |
 | `gate.py` | Checks each candidate live. A failed check or fetch counts as a denial. Only allowed documents are fetched, and the index is refreshed when it held an older version. |
@@ -149,6 +154,51 @@ When nothing is allowed, the reply is the same fixed sentence as when nothing ma
 - Permissions are never cached. In chat, every earlier turn still on screen is re-checked before the next question. A turn whose sources were revoked or changed is removed from the model's context, blanked in the web UI, and logged as `context_dropped`. The user sees only that earlier answers were removed, not which document caused it.
 - The auditor role is read from `identities.json` on every audit request, so revoking it takes effect immediately, even in an open session. Refused attempts are logged as `audit_query_denied`.
 - Switching user starts an empty history.
+
+## Slack
+
+Install once with `pip install slack_bolt`. Until `SLACK_BOT_TOKEN` is set, everything runs on the Slack stand-in.
+
+**Setup.** At <https://api.slack.com/apps>, choose *Create New App → From a manifest*, pick the workspace, and paste:
+
+```yaml
+display_information:
+  name: Internal Brain
+features:
+  bot_user:
+    display_name: brain
+  slash_commands:
+    - command: /brain
+      description: Ask the Internal Brain. Only you see the answer.
+      usage_hint: what is the status of INC-PAY-001?
+oauth_config:
+  scopes:
+    bot: [channels:history, groups:history, channels:read, groups:read, users:read, commands]
+settings:
+  socket_mode_enabled: true
+  event_subscriptions:
+    bot_events: [message.channels, message.groups, member_joined_channel, member_left_channel]
+```
+
+1. *Install to Workspace*, then copy the *Bot User OAuth Token*.
+2. *Basic Information → App-Level Tokens → Generate*, with the scope `connections:write`.
+3. Add both to `.env`:
+
+   ```text
+   SLACK_BOT_TOKEN=xoxb-...
+   SLACK_APP_TOKEN=xapp-...
+   ```
+
+4. Fill in `slack_user_id` for each user in `identities.json`.
+5. Set up the demo channels and threads with `slack_demo/slack_cli.py` (see `slack_demo/README.md`). It also invites the bot. For any other channel, `/invite @brain`; the Brain never reads DMs.
+
+**Behaviour**
+
+- `/brain <question>` answers privately, because the answer is scoped to the asker and others in the channel may have less access. `/brain reset` clears the asker's chat. The user comes from Slack's own user ID, not the demo dropdown; unlinked accounts are refused and logged as `unknown_user`.
+- The app has no `chat:write` scope and replies only through the slash command's private response. Answer text is escaped, so source content cannot trigger `@channel` pings or disguised links.
+- Message, edit, and delete events update the index within seconds. The 60 s poll stays as the backup for missed events.
+- Members joining or leaving a channel are logged as `permission_change` under the affected user. Access is still checked live on every question; the entry only records when it changed.
+- Trade-offs: access is channel membership, which is stricter than Slack itself (any full member can read a public channel). Bot tokens cannot call `search.messages`, so Slack is searched through the index only.
 
 ## Adding a source
 

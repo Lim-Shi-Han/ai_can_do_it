@@ -30,6 +30,7 @@ async function loadOptions() {
   $("auditors").textContent = o.auditors.join(", ") || "none";
   showMembers();
   $("driveAction").hidden = !o.drive;
+  $("slackStandIn").hidden = !o.slack_stand_in;
 }
 
 async function loadGrid() {

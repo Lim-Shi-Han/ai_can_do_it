@@ -2,7 +2,7 @@
   "note": "Fictional hackathon data. Stand-in for Jira and Slack until the real sources are ready.",
   "jira": {
     "projects": {
-      "PAY": {"name": "Payments", "browse": ["ShiHan", "Ivan", "Zhao"]}
+      "PAY": {"name": "Payments", "browse": ["ShiHan", "Ivan", "Zhao", "Elson"]}
     },
     "security_levels": {
       "Security": ["Ivan", "Zhao"]

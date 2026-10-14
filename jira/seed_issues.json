@@ -1,0 +1,576 @@
+{
+  "note": "Fictional hackathon data. Only noise tickets exist before the demo; the INC-PAY-001 tickets are created live (PAY-100 onwards, ACC-41, FIN-21).",
+  "permission_scheme": "Demo role-based permission scheme",
+  "issue_security_scheme": "PAY issue security",
+  "security_level": "Security",
+  "projects": [
+    {
+      "key": "PAY",
+      "name": "Payments",
+      "issue_security": true,
+      "reserve_through": 89,
+      "description": "Payments engineering: incidents, changes, and follow-up work. Fictional hackathon data.",
+      "roles": {
+        "Administrators": [
+          "Zhao"
+        ],
+        "Member": [
+          "ShiHan",
+          "Ivan"
+        ],
+        "Viewer": [
+          "Elson"
+        ],
+        "Security": [
+          "Ivan",
+          "Zhao"
+        ]
+      }
+    },
+    {
+      "key": "ACC",
+      "name": "Access Requests",
+      "issue_security": false,
+      "reserve_through": 36,
+      "description": "Requests for access to company systems and data, including third parties. Approved by Security. Fictional hackathon data.",
+      "roles": {
+        "Administrators": [
+          "Zhao"
+        ],
+        "Member": [
+          "Sheldon",
+          "Ivan"
+        ],
+        "Viewer": [
+          "Elson"
+        ]
+      }
+    },
+    {
+      "key": "FIN",
+      "name": "Finance Operations",
+      "issue_security": false,
+      "reserve_through": 16,
+      "description": "Settlement, reconciliation, and payment-operations work for Finance. Fictional hackathon data.",
+      "roles": {
+        "Administrators": [
+          "Zhao"
+        ],
+        "Member": [
+          "Sheldon"
+        ]
+      }
+    }
+  ],
+  "targets": {
+    "PAY": [
+      "PAY",
+      "Member"
+    ],
+    "Security": [
+      "PAY",
+      "Security"
+    ],
+    "ACC": [
+      "ACC",
+      "Member"
+    ],
+    "FIN": [
+      "FIN",
+      "Member"
+    ]
+  },
+  "issues": [
+    {
+      "key": "PAY-90",
+      "type": "Story",
+      "summary": "Add PayNow QR as a checkout option for SME businesses",
+      "status": "Done",
+      "reporter": "Zhao",
+      "assignee": "ShiHan",
+      "due": "2026-09-15",
+      "labels": [
+        "checkout",
+        "paynow"
+      ],
+      "security": false,
+      "description": "Background:\nSME businesses on our hosted checkout keep asking for PayNow. A large share of their buyers in Singapore do not use credit cards for purchases under SGD 200 and abandon the cart when card entry is the only option.\n\nGoal:\nLet buyers pay from any Singapore banking app by scanning a PayNow QR. Funds land in the existing SGD collection account, so Finance sees PayNow takings next to card takings.\n\nScope:\n- Generate a dynamic PayNow QR (SGQR format) for every SGD order on the hosted checkout page\n- Expire each QR in 10 minutes and generate a fresh one on the same page\n- Confirm the order by webhook from the collection bank, with polling as a fallback\n- Keep card checkout exactly as it is; PayNow only appears for SGD orders\n- Ship behind the paynow-checkout flag so it can be rolled out gradually\n\nAcceptance criteria:\n- The buyer sees the QR within 2 seconds of choosing PayNow\n- Order confirmation within 30 seconds of the bank transfer in 99% of cases\n- An expired QR cannot be paid; the bank returns those funds automatically\n- The ops dashboard shows PayNow volume and confirmation latency per business\n\nOut of scope: PayNow refunds (tracked separately) and non-SGD currencies.\nRequested by Priya Nair (Product).",
+      "comments": [
+        {
+          "author": "ShiHan",
+          "text": "QR generation and the bank webhook handler are behind the paynow-checkout flag. End-to-end tests in staging pass for SGD 1.00, SGD 199.99 and SGD 5,000.00 orders, and the sandbox bank refuses an expired QR as expected."
+        },
+        {
+          "author": "Zhao",
+          "text": "Good to go for a gradual rollout. Turn it on for 10% of SME businesses first and watch confirmation latency for a full week before going wider. If p99 latency goes above 30 seconds, switch back to card-only."
+        },
+        {
+          "author": "ShiHan",
+          "text": "Week one at 10%: 4,812 PayNow orders, p99 confirmation latency 7.6 seconds, no stuck orders. Moved to 50% on Monday."
+        },
+        {
+          "author": "ShiHan",
+          "text": "Four days at 50% with the same latency profile. Released to all SME businesses; the paynow-checkout flag stays in place as a kill switch until the end of the month."
+        }
+      ]
+    },
+    {
+      "key": "PAY-91",
+      "type": "Bug",
+      "summary": "FX amounts off by 0.01 on multi-currency invoices",
+      "status": "In Progress",
+      "reporter": "ShiHan",
+      "assignee": "ShiHan",
+      "due": "2026-10-24",
+      "labels": [
+        "fx",
+        "invoicing"
+      ],
+      "security": false,
+      "description": "Summary:\nInvoices issued in USD and converted to SGD can disagree with the books by SGD 0.01. The invoicing module rounds every line item to two decimals before adding the lines up, while the accounting system converts the unrounded total once.\n\nSteps to reproduce:\n- Issue a USD invoice with three line items of USD 33.33 each\n- Convert it to SGD at the daily rate (1.3127 on 2026-10-08)\n- Compare the invoice total (SGD 131.25) with the journal entry (SGD 131.26)\n\nExpected:\nA single rounding step, at the invoice total, so the invoice and the journal entry always agree.\n\nScope:\n- Fix the rounding order in the invoicing module\n- Backfill the invoices issued since 1 October that carry a 0.01 difference\n- Add regression tests with three-line and seven-line invoices\n\nSpotted by Finance (Sheldon) in the September close.",
+      "comments": [
+        {
+          "author": "ShiHan",
+          "text": "Reproduced with the three-line USD invoice above: SGD 131.25 on the invoice, SGD 131.26 in the journal. The fix rounds once at the invoice total; the PR is up with the regression tests."
+        },
+        {
+          "author": "Zhao",
+          "text": "Please backfill the 14 invoices issued since 1 October before closing this, and send Sheldon the list so Finance can adjust the September close if needed."
+        },
+        {
+          "author": "ShiHan",
+          "text": "Backfill script dry-run in staging: 14 invoices, each off by exactly SGD 0.01, nine in our favour and five against. I will run it once the PR merges and send Sheldon the list."
+        }
+      ]
+    },
+    {
+      "key": "PAY-92",
+      "type": "Task",
+      "summary": "Add a circuit breaker to the card-network client",
+      "status": "Done",
+      "reporter": "Zhao",
+      "assignee": "ShiHan",
+      "due": "2026-08-29",
+      "labels": [
+        "INC-CARD-014",
+        "card-network"
+      ],
+      "security": false,
+      "description": "Background:\nAction item from INC-CARD-014 on 2026-08-12. The card network answered slowly for 38 minutes. Our checkout waited up to 30 seconds on each call, request handlers piled up, and card checkout degraded for every business.\n\nPlan:\n- Wrap the card-network client in a circuit breaker\n- Trip the breaker at 20 consecutive responses slower than 3 seconds\n- While the breaker is tripped, return a retryable error so the checkout page offers PayNow instead of hanging\n- Let one probe call through every 30 seconds and close the breaker on 5 healthy responses in a row\n- Show the breaker state on the checkout dashboard and page on-call when it trips\n\nAcceptance criteria:\n- A replay of the 2026-08-12 traffic in staging keeps checkout responsive (p99 under 2 seconds)\n- The breaker state appears on the dashboard within 10 seconds\n\nRequested by Dev Kumar (Platform).",
+      "comments": [
+        {
+          "author": "ShiHan",
+          "text": "The breaker is in place behind a config switch. The 2026-08-12 replay in staging held p99 at 1.4 seconds; without the breaker it climbed to 29 seconds."
+        },
+        {
+          "author": "Zhao",
+          "text": "Ship it. Make sure the page to on-call names the card network that tripped, not just that something tripped."
+        },
+        {
+          "author": "ShiHan",
+          "text": "Deployed to production with the network name in the page. In the 2026-09-02 card-network slowdown it tripped twice, checkout fell back to PayNow as planned, and nobody had to step in."
+        }
+      ]
+    },
+    {
+      "key": "PAY-93",
+      "type": "Task",
+      "summary": "Run a standby-region switchover drill for the card-network gateway",
+      "status": "Done",
+      "reporter": "Zhao",
+      "assignee": "ShiHan",
+      "due": "2026-09-05",
+      "labels": [
+        "INC-CARD-014",
+        "card-network",
+        "dr-drill"
+      ],
+      "security": false,
+      "description": "Background:\nAction item from INC-CARD-014. We have never moved card-network gateway traffic to the standby region outside a test plan, so we do not know how long it takes or what breaks along the way.\n\nPlan:\n- Switch staging gateway traffic to the standby region using the regional DNS weights\n- Measure how long the switch takes end to end and count retried card authorisations\n- Switch back and confirm the primary region takes the full load again\n- Record durations, surprises and the exact commands in the card-network playbook\n\nExit criteria:\n- The switch completes in under 5 minutes\n- No card authorisation is lost; retries are acceptable\n\nRequested by Maya Tan (SRE).",
+      "comments": [
+        {
+          "author": "ShiHan",
+          "text": "Staging drill complete. The switch took 4 min 10 s end to end; 37 card authorisations were retried and none were lost. The DNS weights took 2 min 40 s to take effect, which is most of the delay."
+        },
+        {
+          "author": "Zhao",
+          "text": "Good result. Book the production drill for the November maintenance window, and add a step to lower the DNS TTL a day in advance."
+        },
+        {
+          "author": "ShiHan",
+          "text": "Production drill booked for 2026-11-14, 02:00 SGT. The TTL step is in the card-network playbook."
+        }
+      ]
+    },
+    {
+      "key": "PAY-94",
+      "type": "Task",
+      "summary": "Quarterly rotation of card-gateway API keys",
+      "status": "Done",
+      "reporter": "Ivan",
+      "assignee": "Ivan",
+      "due": "2026-09-30",
+      "labels": [
+        "key-rotation",
+        "pci"
+      ],
+      "security": true,
+      "description": "Rotate the card-gateway API keys on the usual three-month cycle, as our PCI DSS key management standard requires.\n\nChecklist:\n- Generate the replacement key pair in the secrets manager\n- Roll the replacement keys out to checkout and the refunds job, region by region\n- Revoke the previous set 24 hours later, once gateway logs show no calls with the old keys\n- Record the rotation date and key fingerprints in the PCI evidence register\n\nNotes:\n- Keys never leave the secrets manager; nobody copies the keys into config files or chat\n- Next rotation due: 2026-12-30",
+      "comments": [
+        {
+          "author": "Ivan",
+          "text": "Replacement key pair generated. Rolled to checkout in ap-southeast-1 first, then ap-southeast-3; the refunds job picked up the keys on its next deploy."
+        },
+        {
+          "author": "Ivan",
+          "text": "Gateway logs show zero calls with the old keys for 24 hours. The previous set is revoked and the fingerprints are in the PCI evidence register."
+        },
+        {
+          "author": "Zhao",
+          "text": "Thanks Ivan. Put the December rotation on the team calendar now so it does not slip."
+        }
+      ]
+    },
+    {
+      "key": "PAY-95",
+      "type": "Task",
+      "summary": "Increase the batch queue-depth alert threshold",
+      "status": "To Do",
+      "reporter": "ShiHan",
+      "assignee": null,
+      "due": "2026-11-07",
+      "labels": [
+        "batch-jobs",
+        "alerting"
+      ],
+      "security": false,
+      "description": "Problem:\nThe batch queue-depth alert pages on-call at 5,000 queued jobs. It fires repeatedly in every month-end run, clears on its own within minutes, and has paged on-call on 23 occasions in the past 30 days with no visible effect. On-call now ignores it, which is worse than having no alert at all.\n\nPlan:\n- Lift the threshold to 20,000 queued jobs\n- Add a second rule that pages when a job waits longer than 15 minutes, which is the real warning sign\n- Keep a non-paging dashboard tile at 5,000 for visibility\n\nEvidence:\nThe September month-end run peaked at 14,200 queued jobs and drained in 11 minutes without a single late job.\n\nRequested by Wei Ling (SRE).",
+      "comments": [
+        {
+          "author": "ShiHan",
+          "text": "Agree with the plan. The September month-end run peaked at 14,200 queued jobs and drained in 11 minutes, so 20,000 leaves headroom."
+        },
+        {
+          "author": "Zhao",
+          "text": "Fine by me, but ship the 15-minute wait rule in the same release so we keep the coverage."
+        }
+      ]
+    },
+    {
+      "key": "PAY-96",
+      "type": "Story",
+      "summary": "Instant payouts to IDR bank accounts (Q4 roadmap)",
+      "status": "To Do",
+      "reporter": "Zhao",
+      "assignee": null,
+      "due": "2026-12-15",
+      "labels": [
+        "payouts",
+        "roadmap-q4"
+      ],
+      "security": false,
+      "description": "Goal:\nLet SME accounts send instant payouts from SGD balances to Indonesian rupiah (IDR) bank accounts through a local banking partner, so they no longer wait two business days for SWIFT.\n\nTo confirm with the partner:\n- FX spread and fee shown to the sender before confirming\n- Daily limits per sending account and per beneficiary\n- Cut-off for same-day credit, and behaviour on Indonesian bank holidays\n- Name check on the beneficiary account before funds move\n\nDependencies:\n- Partner sandbox credentials (expected by 24 October)\n- Compliance sign-off on the beneficiary name check\n\nBlocked until the partner sandbox credentials arrive. Requested by Priya Nair (Product).",
+      "comments": [
+        {
+          "author": "Zhao",
+          "text": "The partner confirmed the sandbox credentials arrive by 24 October. Do not commit to a launch date until we have run real transfers in their sandbox."
+        },
+        {
+          "author": "ShiHan",
+          "text": "Read the partner API guide: the beneficiary name check is synchronous and answers in under 1 second, so it can sit inline in the payout flow."
+        }
+      ]
+    },
+    {
+      "key": "PAY-97",
+      "type": "Bug",
+      "summary": "Payout CSV uses UTC instead of SGT for the daily cut-off",
+      "status": "In Progress",
+      "reporter": "ShiHan",
+      "assignee": "ShiHan",
+      "due": "2026-10-30",
+      "labels": [
+        "payouts",
+        "payout-csv"
+      ],
+      "security": false,
+      "description": "Summary:\nThe daily payout CSV labels its cut-off as 23:59 SGT but applies it in UTC. Transfers between 08:00 and 23:59 SGT land in the next day's file, so the CSV totals disagree with the bank statement for that day.\n\nSteps to reproduce:\n- Send a payout at 09:00 SGT\n- Download the payout CSV for that date\n- The payout is missing and appears in the next day's file instead\n\nExpected:\nThe cut-off is applied in the Asia/Singapore zone, as labelled.\n\nScope:\n- Convert the cut-off to Asia/Singapore before filtering\n- Add tests at the 07:59, 08:00 and 23:59 SGT boundaries\n- Regenerate the files for the past 30 days and notify the businesses whose files moved\n\nRequested by Wei Ling (SRE).",
+      "comments": [
+        {
+          "author": "ShiHan",
+          "text": "Confirmed: the filter compares UTC timestamps against a 23:59 SGT label. The fix converts the cut-off to Asia/Singapore before filtering; tests for the 07:59, 08:00 and 23:59 boundaries are in the PR."
+        },
+        {
+          "author": "Zhao",
+          "text": "Before regenerating old files, check with Sheldon whether Finance has already booked against the old files."
+        },
+        {
+          "author": "ShiHan",
+          "text": "Sheldon confirmed Finance books from the bank statement, not the CSV, so regenerating the past 30 days is safe. Regeneration runs once the fix ships."
+        }
+      ]
+    },
+    {
+      "key": "PAY-98",
+      "type": "Task",
+      "summary": "Remove the deprecated v1 refunds endpoint",
+      "status": "To Do",
+      "reporter": "ShiHan",
+      "assignee": null,
+      "due": "2026-11-30",
+      "labels": [
+        "tech-debt",
+        "refunds"
+      ],
+      "security": false,
+      "description": "Background:\n/v1/refunds was replaced by /v2/refunds in March. No client has called /v1/refunds since 2026-07-01, based on 90 days of API gateway logs, and the endpoint carries its own copy of the refund rules, which keeps drifting from v2.\n\nPlan:\n- Return 410 Gone with a pointer to /v2/refunds for one release\n- Delete the handler, its tests and the duplicated refund rules\n- Remove the endpoint from the public API reference and the SDKs\n\nRisk:\nLow. If an unknown client appears, the 410 response tells it exactly where to go.\n\nRequested by Dev Kumar (Platform).",
+      "comments": [
+        {
+          "author": "ShiHan",
+          "text": "Checked again: zero calls to /v1/refunds in the gateway logs for the past 90 days, including the month-end peaks."
+        },
+        {
+          "author": "Zhao",
+          "text": "Go ahead for the next release. Send the 410 notice to the developer mailing list a week before."
+        }
+      ]
+    },
+    {
+      "key": "PAY-99",
+      "type": "Bug",
+      "summary": "Patch TLS settings flagged by the PCI DSS scan",
+      "status": "In Progress",
+      "reporter": "Ivan",
+      "assignee": "Ivan",
+      "due": "2026-10-31",
+      "labels": [
+        "pci-dss",
+        "vulnerability-scan"
+      ],
+      "security": true,
+      "description": "Problem:\nThe external PCI DSS vulnerability scan flagged TLS 1.0 enabled on two card-data hosts, cde-web-01 and cde-web-02. PCI DSS requires TLS 1.2 or higher on every host in the cardholder data environment, so this blocks a passing scan.\n\nPlan:\n- Disable TLS 1.0 and 1.1 on both hosts and limit ciphers to the allowed list\n- Re-run the external scan against both hosts\n- Attach the clean scan result to the PCI evidence pack\n\nNotes:\n- Restricted: scan results for card-data hosts are need-to-know until both hosts pass\n- No sign of exploitation; the weakness is configuration only",
+      "comments": [
+        {
+          "author": "Ivan",
+          "text": "TLS 1.0 and 1.1 are off on cde-web-01 and the local scan is clean. cde-web-02 goes in the Thursday maintenance window because it fronts the card vault."
+        },
+        {
+          "author": "Zhao",
+          "text": "Thanks. Keep this restricted until both hosts pass the external scan, then attach the evidence and close it."
+        },
+        {
+          "author": "Ivan",
+          "text": "Maintenance slot for cde-web-02 is booked for Thursday 22:00 SGT."
+        }
+      ]
+    },
+    {
+      "key": "ACC-37",
+      "type": "Task",
+      "summary": "Read-only BigQuery role for the data team's student analyst",
+      "status": "Done",
+      "reporter": "Zhao",
+      "assignee": "Ivan",
+      "due": "2026-09-12",
+      "labels": [
+        "bigquery",
+        "read-only"
+      ],
+      "security": false,
+      "description": "Requester: Nadia Rahman (Data)\nFor: student analyst on placement, 2026-09-15 to 2026-12-19\nSystem: BigQuery (analytics-prod)\nRole: BigQuery Data Viewer on the analytics_dashboards dataset only\nJustification: builds the weekly payouts dashboard for the Product team\nData classification: aggregates only; no tables with personal data\nValid until: 2026-12-19, the end of the placement\nSign-off: Ivan",
+      "comments": [
+        {
+          "author": "Ivan",
+          "text": "Signed off. Granted through the analytics-readers group with an expiry of 2026-12-19, so it lapses with the placement without a manual clean-up."
+        },
+        {
+          "author": "Zhao",
+          "text": "Thanks. Add Nadia to the quarterly check list too, in case the placement is extended."
+        }
+      ]
+    },
+    {
+      "key": "ACC-38",
+      "type": "Task",
+      "summary": "Xero read-only login for the external tax adviser",
+      "status": "Done",
+      "reporter": "Sheldon",
+      "assignee": "Ivan",
+      "due": "2026-09-30",
+      "labels": [
+        "xero",
+        "external",
+        "expiring"
+      ],
+      "security": false,
+      "description": "Requester: Sheldon (Finance)\nFor: Tan & Co, our external tax adviser (engagement letter signed 2026-09-20)\nSystem: Xero\nRole: read-only adviser login; no bank feeds, no payroll\nJustification: Tan & Co prepares the GST return for July to September from the books\nValid: 2026-10-01 to 2026-10-31\nSign-off: Ivan",
+      "comments": [
+        {
+          "author": "Ivan",
+          "text": "Signed off for October only. Single named login, MFA enforced, no bank feed or payroll visibility."
+        },
+        {
+          "author": "Sheldon",
+          "text": "Login details sent to the adviser by phone, not email. I will disable the login on 31 October once the return is filed."
+        },
+        {
+          "author": "Ivan",
+          "text": "Auto-expiry is also set for 31 October 23:59 SGT as a backstop."
+        }
+      ]
+    },
+    {
+      "key": "ACC-39",
+      "type": "Task",
+      "summary": "GitHub write rights on the mobile-app repository for a mobile engineer who joined this month",
+      "status": "In Progress",
+      "reporter": "Zhao",
+      "assignee": "Ivan",
+      "due": "2026-10-17",
+      "labels": [
+        "github",
+        "onboarding"
+      ],
+      "security": false,
+      "description": "Requester: Kevin Ong (Mobile lead)\nFor: Aisha Lim, mobile engineer, joined 2026-10-06\nSystem: GitHub\nRole: write on mobile-app; no admin rights, nothing on other repositories\nJustification: day-to-day development on the mobile app; releases stay with the mobile lead\nValid: kept until the next quarterly check\nSign-off: Ivan, once onboarding is complete",
+      "comments": [
+        {
+          "author": "Ivan",
+          "text": "Waiting for the onboarding checklist to show the coding-standards module as complete. Write rights will go through the mobile-engineers team rather than a direct grant."
+        },
+        {
+          "author": "Zhao",
+          "text": "Kevin, please nudge Aisha to finish the module this week so Aisha is not blocked on pull requests."
+        }
+      ]
+    },
+    {
+      "key": "ACC-40",
+      "type": "Task",
+      "summary": "Okta group update: add two analysts to finance-tools",
+      "status": "To Do",
+      "reporter": "Sheldon",
+      "assignee": "Ivan",
+      "due": "2026-10-20",
+      "labels": [
+        "okta",
+        "finance-tools"
+      ],
+      "security": false,
+      "description": "Requester: Sheldon (Finance)\nFor: Farah Aziz and Daniel Teo, accounts-payable analysts who joined in October\nSystem: Okta\nRole: membership of the finance-tools group, which covers the expense platform and the AP inbox\nJustification: both analysts process supplier invoices from 20 October\nValid: permanent, checked quarterly\nSign-off: Ivan",
+      "comments": [
+        {
+          "author": "Sheldon",
+          "text": "Both analysts have signed the acceptable-use policy and finished the phishing module."
+        },
+        {
+          "author": "Ivan",
+          "text": "Thanks. I will add both on 19 October so the group membership is ready for their first day on the expense platform."
+        }
+      ]
+    },
+    {
+      "key": "FIN-17",
+      "type": "Task",
+      "summary": "Accrue September card-network fees for month-end close",
+      "status": "Done",
+      "reporter": "Sheldon",
+      "assignee": "Sheldon",
+      "due": "2026-10-05",
+      "labels": [
+        "month-end",
+        "accruals"
+      ],
+      "security": false,
+      "description": "Background:\nCard-network fees for September are invoiced in mid-October, so they are accrued in the September close.\n\nChecklist:\n- Pull the September fee statement from the card-network portal\n- Book the accrual journal: SGD 18,240 against card-network fees\n- Attach the calculation and the statement to the September close checklist\n- Reverse the accrual when the October invoice arrives",
+      "comments": [
+        {
+          "author": "Sheldon",
+          "text": "Accrual booked: SGD 18,240. The calculation and the fee statement are attached to the September close checklist."
+        },
+        {
+          "author": "Zhao",
+          "text": "Fees are 6% higher than August on roughly the same volume. Check whether the higher pricing tier applies from September."
+        },
+        {
+          "author": "Sheldon",
+          "text": "Confirmed: the card network moved us to the next pricing tier on 1 September because of the volume shift. I have asked for the tier thresholds in writing."
+        }
+      ]
+    },
+    {
+      "key": "FIN-18",
+      "type": "Task",
+      "summary": "Update FX revaluation rates for the October close",
+      "status": "In Progress",
+      "reporter": "Sheldon",
+      "assignee": "Sheldon",
+      "due": "2026-11-03",
+      "labels": [
+        "month-end",
+        "fx"
+      ],
+      "security": false,
+      "description": "Background:\nForeign-currency balances in USD, IDR and MYR are revalued at month end using the MAS reference rates.\n\nChecklist:\n- Download the 31 October MAS reference rates\n- Update the rate table in the books\n- Rerun the revaluation journal and post it\n- Explain any movement above SGD 5,000 in the close notes",
+      "comments": [
+        {
+          "author": "Sheldon",
+          "text": "Rate table template is ready; waiting for the 31 October rates, which MAS publishes on the next business day."
+        },
+        {
+          "author": "Zhao",
+          "text": "Flag the IDR movement separately; it will be large with the payout volume."
+        }
+      ]
+    },
+    {
+      "key": "FIN-19",
+      "type": "Task",
+      "summary": "Chase unapplied incoming transfers older than 30 days",
+      "status": "To Do",
+      "reporter": "Zhao",
+      "assignee": "Sheldon",
+      "due": "2026-10-31",
+      "labels": [
+        "cash-application"
+      ],
+      "security": false,
+      "description": "Background:\nEleven incoming transfers totalling SGD 4,830 cannot be tied to an invoice; the oldest is from 2026-08-29.\n\nNext steps:\n- Contact each sender with the transfer reference\n- Apply the funds to the right invoice, or send the funds back\n- Write off nothing without sign-off from the Finance lead\n- Update the unapplied-cash schedule every Friday until it is clear",
+      "comments": [
+        {
+          "author": "Sheldon",
+          "text": "Sent queries to all eleven senders; three have replied with invoice references and are applied."
+        },
+        {
+          "author": "Zhao",
+          "text": "If a sender has not replied in two weeks, escalate to the account manager rather than sending the funds back."
+        }
+      ]
+    },
+    {
+      "key": "FIN-20",
+      "type": "Task",
+      "summary": "Prepare GST filing workpapers for July to September",
+      "status": "To Do",
+      "reporter": "Sheldon",
+      "assignee": "Sheldon",
+      "due": "2026-10-28",
+      "labels": [
+        "gst",
+        "tax"
+      ],
+      "security": false,
+      "description": "Background:\nThe GST return for July to September is due on 2026-10-31. Tan & Co, our tax adviser, checks the draft before filing.\n\nChecklist:\n- Pull sales totals by tax code\n- Pull purchase totals and input tax claims, with invoices above SGD 10,000 attached\n- Share the draft with Tan & Co through their Xero login (ACC-38)\n- File on the IRAS portal once Tan & Co signs off",
+      "comments": [
+        {
+          "author": "Sheldon",
+          "text": "Sales totals pulled. Purchase side next; copies of three supplier invoices above SGD 10,000 are being chased."
+        },
+        {
+          "author": "Zhao",
+          "text": "Fine. Aim to file by 28 October to leave a buffer."
+        }
+      ]
+    }
+  ]
+}

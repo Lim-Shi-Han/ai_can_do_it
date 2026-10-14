@@ -123,6 +123,8 @@ python3 -m main_workflow.cli audit verify
 |---|---|
 | `sources/base.py` | The interface every platform implements: `search`, `can_access`, `fetch`, `changes_since`. |
 | `sources/confluence.py` | Confluence source for the spaces in `CONFLUENCE_SPACE_KEYS` (`HANDBOOK`, `PAYOPS`, `FINOPS`, `SECOPS`). Reuses the client in `confluence/confluence_cli.py` and adds search and a live per-user permission check; each page is labelled with its own space. |
+| `sources/slack.py` | Slack source. One thread is one document; access is live channel membership. Reads only channels the bot is in, never DMs. Falls back to the stand-in until `SLACK_BOT_TOKEN` is set. |
+| `slack_bot.py` | The `/brain` command and Slack's message and membership events, over Socket Mode. Started by `web.py`. |
 | `../stand_in_jira_slack/` | Stand-in Jira and Slack sources (`jira-fixture`, `slack-fixture`) until the real ones are ready. See its README. |
 | `sources/gdrive.py` | Google Drive source. Reuses the client in `gdrive/gdrive_cli.py` with the read-only scope. Skipped with a warning until Drive is configured in `.env`. |
 | `gate.py` | Checks each candidate live. A failed check or fetch counts as a denial. Only allowed documents are fetched, and the index is refreshed when it held an older version. |

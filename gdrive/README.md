@@ -1,5 +1,7 @@
 # Company A's Google Drive
 
+New to this? Start with [SETUP.md](SETUP.md): the files to get, the `.env` lines, and how to check that everything works.
+
 Zhao (the CTO) owns the folder tree. Each person owns the files they wrote, and only one folder is ever shared outside the company: the one the payment processor uses during INC-PAY-001.
 
 | Folder | ShiHan | Zhao | Ivan | Sheldon | Terrance |
@@ -29,32 +31,60 @@ Use an established Google account, and keep company names out of the project nam
 
 4. **Users.** Put each person's Google account in `google_email` in `main_workflow/identities.json` (not in Git; see `identities.example.json`). Drive can only share with an address that has a Google account.
 
-## Build, upload, set up
+## Who does what
 
-The service account can share folders but cannot create files (it has no storage), so each person uploads their own files.
+| Account | Does |
+|---|---|
+| Service account (`service_account.json`) | Reads files for the app, checks who can open each one, shares and unshares folders |
+| Each person's own sign-in (`gdrive/tokens/<Name>.json`) | Creates files, so the person is the owner. The service account cannot: it has no storage, and with personal Google accounts it cannot act as anyone |
+
+## Sign-ins (one-time)
+
+1. In a Google Cloud project with the Drive API enabled, open *Google Auth Platform*: audience **External**, add the Google addresses of Zhao, ShiHan, Ivan, Sheldon, and Terrance under *Audience → Test users*, and add the scope `https://www.googleapis.com/auth/drive` under *Data access*.
+2. *Clients → Create client → Desktop app*, download the JSON, and save it as `gdrive/oauth_client.json` (ignored by Git). One client serves everyone.
+3. Each person signs in once. The browser opens; they sign in, choose **Continue** on "Google hasn't verified this app", and allow Drive access. The token goes to `gdrive/tokens/<Name>.json` (ignored by Git):
 
 ```bash
-python3 gdrive/demo_drive.py build --date 2026-10-15   # writes gdrive/upload/: one folder per person, plus HOW TO UPLOAD.txt
+python3 gdrive/gdrive_cli.py login Zhao
+python3 gdrive/gdrive_cli.py login Terrance --paste   # for someone on another computer: they open the link and send back the final address
+python3 gdrive/gdrive_cli.py check --as Zhao          # whose sign-in it is
 ```
 
-1. **Zhao** drags `gdrive/upload/1 Zhao - …/Company A` into My Drive, which creates the folder tree with his files, then shares `Company A` with the service account's email as Editor.
-2. Run `python3 gdrive/demo_drive.py setup`. It:
-   - shares every folder as in the table
-   - moves the existing `INC-PAY-001` folder (`GDRIVE_FOLDER_ID`) into `Vendors/PayProcessor` and renames it
-   - moves the old *INC-PAY-001 payment metrics report* to the trash, or says that Zhao must delete it. It holds the final figures that step 7 works out, so it must be gone before Terrance is shared.
-3. **ShiHan, Ivan, Sheldon** open *Shared with me → Company A*, then the folder named in their `2 <name>/into …` folder, and drag the files in (not the folder).
-4. Run `setup` again (for the single shared file), then `check`:
+`login` refuses to save if the person signs in with a Google account other than their `google_email`. A token gives full access to that person's Drive, so keep `gdrive/tokens/` private; anyone can revoke it at <https://myaccount.google.com/permissions>. While the app is in testing mode, sign-ins expire after 7 days: sign in again before a demo.
+
+## Seed and check
 
 ```bash
+python3 gdrive/demo_drive.py seed     # creates whatever is missing; safe to rerun
 python3 gdrive/demo_drive.py check    # every file present, owned by the right person, readable; flags extras
 python3 gdrive/demo_drive.py access   # who can open each file, from Drive's permissions
 ```
 
-Uploads stay Word and CSV files; leave *Convert uploads* off in Drive's settings. The app reads Word, CSV, Google Docs, and Google Sheets.
+`seed`:
+1. As Zhao: creates `Company A` and the folders in it, including the empty processor folder, and shares `Company A` with the service account as editor.
+2. As the service account: shares each folder as in the table above.
+3. As each owner: uploads their files. Anyone not signed in yet is skipped and listed; run `seed` again after they sign in.
+4. As the service account: shares *Scheme fee schedule 2026* with ShiHan.
+
+When it prints a new `GDRIVE_FOLDER_ID`, put that in `.env`. Files are Word and CSV; the app reads Word, CSV, Google Docs, and Google Sheets.
+
+`seed` also removes people's direct access to `Company A` (a share there would reach every folder) and leaves files someone else uploaded alone; `seed --fix-owners` has the right owner upload their own copy and moves the other copy to its owner's trash. `check` also compares every folder's sharing with the table above.
+
+**Sheldon** cannot sign in yet (his Google account is not verified), so `uploaded_by` in `demo_drive.json` has Zhao upload Sheldon's files, including the step 7 payment records. Sheldon keeps his own access. Once he can sign in: `login Sheldon`, remove the entry, and run `seed --fix-owners`.
+
+**Without sign-ins**, people upload by hand instead: `build` writes the files into `gdrive/upload/` with `HOW TO UPLOAD.txt`; Zhao uploads the `Company A` folder and shares it with the service account; `setup` shares the folders; the others drag their files in; `setup` and `check` again.
 
 ## The demo files
 
-Built for the rehearsal date into `gdrive/upload/3 demo <date>/` and uploaded live into the processor folder:
+Uploaded live into the processor folder, dated with the day of the demo (or `--date`):
+
+```bash
+python3 gdrive/demo_drive.py upload 3            # Terrance's timeout log
+python3 gdrive/demo_drive.py upload 7 Terrance   # the settlement export
+python3 gdrive/demo_drive.py upload 7 Sheldon    # Company A's payment records copy
+```
+
+Drive itself checks access: Terrance's upload is refused until the folder is shared with him as editor. People can also upload the same files by hand from `gdrive/upload/3 demo <date>/` (`build`).
 
 | Step | Uploaded by | File | Holds |
 |---|---|---|---|
@@ -71,7 +101,7 @@ python3 gdrive/gdrive_cli.py share Terrance --role editor   # step 3
 python3 gdrive/gdrive_cli.py unshare Terrance               # step 8
 ```
 
-`share` takes `--role viewer|commenter|editor` and changes the role if the person already has a different one. `main_workflow` checks Drive permissions live on every question, so no resync is needed after a change.
+`share` takes `--role viewer|commenter|editor` and changes the role if the person already has a different one; add `--as Zhao` to share with Zhao's sign-in, so Drive's activity log names him. The console's Drive button still shares as viewer only, which is not enough for Terrance to upload; use the command above for step 3 until the console passes the role. `main_workflow` checks Drive permissions live on every question, so no resync is needed after a change.
 
 After step 8 Terrance loses the payment records copy (Sheldon's file) and with it the 214-retry figure. He keeps the two files he uploaded: in personal Google accounts the uploader owns the file.
 
@@ -81,23 +111,7 @@ After step 8 Terrance loses the payment records copy (Sheldon's file) and with i
 python3 gdrive/demo_drive.py reset --yes
 ```
 
-It removes Terrance from the processor folder and empties it. Only a file's owner can delete it, so `reset` lists the uploads that Terrance or Sheldon must delete in Drive.
-
-## Acting as a person (optional)
-
-With a sign-in client, commands can run as a person instead of the service account (`--as NAME`), for example so Drive records Zhao as the one who shared. This needs one Desktop app client and one sign-in per person:
-
-1. In a Google Cloud project with the Drive API enabled, open *Google Auth Platform*: audience **External**, add each person's Google address under *Audience → Test users*, and add the scope `https://www.googleapis.com/auth/drive` under *Data access*.
-2. *Clients → Create client → Desktop app*, download the JSON, and save it as `gdrive/oauth_client.json` (ignored by Git).
-3. Each person signs in once; the token goes to `gdrive/tokens/<Name>.json` (ignored by Git):
-
-```bash
-python3 gdrive/gdrive_cli.py login Zhao               # opens the browser; choose Continue on the "not verified" warning
-python3 gdrive/gdrive_cli.py login Terrance --paste   # for someone on another computer
-python3 gdrive/gdrive_cli.py share Terrance --role editor --as Zhao
-```
-
-`login` refuses to save if the person signs in with a Google account other than their `google_email`. In testing mode, sign-ins expire after 7 days.
+It removes Terrance from the processor folder and moves the demo uploads to their owners' trash, using each owner's sign-in (only the owner can delete a file). Uploads by someone who has not signed in are listed for them to delete in Drive.
 
 ## Other commands
 

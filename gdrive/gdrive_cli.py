@@ -7,6 +7,7 @@ import hashlib
 import http.server
 import io
 import json
+import mimetypes
 import os
 import re
 import secrets
@@ -41,6 +42,8 @@ ROLES = {"viewer": "reader", "commenter": "commenter", "editor": "writer"}
 GOOGLE_DOC = "application/vnd.google-apps.document"
 GOOGLE_SHEET = "application/vnd.google-apps.spreadsheet"
 DOCX = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+mimetypes.add_type(DOCX, ".docx")
+mimetypes.add_type("text/csv", ".csv")  # Windows may map .csv to Excel's type
 TEXT_EXTENSIONS = (".csv", ".txt", ".md", ".log")
 W = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
 FOLDER = "application/vnd.google-apps.folder"
@@ -291,6 +294,25 @@ def unshare(drive, item, name):
     return f"{drive.user or 'The service account'} removed {name} ({email}) from {item['name']}"
 
 
+def create_folder(drive, parent_id, name):
+    """A folder owned by whoever drive signs in as (the service account can create folders but not files)."""
+    return drive.request("POST", f"{API}/files", {"fields": "id,name,mimeType,parents,owners(emailAddress)"},
+                         payload={"name": name, "mimeType": FOLDER, "parents": [parent_id]})
+
+
+def upload_file(drive, folder_id, name, data, mime=None):
+    """Upload bytes as a new file in folder_id, owned by whoever drive signs in as. Needs a person's sign-in:
+    the service account has no storage."""
+    mime = mime or mimetypes.guess_type(name)[0] or "application/octet-stream"
+    boundary = secrets.token_hex(16)
+    body = (f"--{boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n"
+            f"{json.dumps({'name': name, 'parents': [folder_id]})}\r\n"
+            f"--{boundary}\r\nContent-Type: {mime}\r\n\r\n").encode() + data + f"\r\n--{boundary}--\r\n".encode()
+    return drive.request("POST", f"{UPLOAD_API}/files",
+                         {"uploadType": "multipart", "fields": "id,name,mimeType,parents,owners(emailAddress),webViewLink"},
+                         data=body, content_type=f"multipart/related; boundary={boundary}")
+
+
 def login(name, paste=False):
     """One-time Google sign-in for a person (OAuth with PKCE on a loopback address); saves their refresh token."""
     client, email = oauth_client(), persona_email(name)
@@ -377,8 +399,8 @@ def save_manifest(drive, folder, files):
 def main():
     load_local_env()
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=["login", "check", "seed", "list", "read", "access", "share", "unshare"])
-    parser.add_argument("target", nargs="*", help="file ID for read, user names for login/share/unshare")
+    parser.add_argument("command", choices=["login", "check", "seed", "list", "read", "access", "share", "unshare", "upload"])
+    parser.add_argument("target", nargs="*", help="file ID for read, user names for login/share/unshare, local files for upload")
     parser.add_argument("--as", dest="as_user", metavar="NAME", help="use NAME's saved Google sign-in instead of the service account")
     parser.add_argument("--paste", action="store_true", help="login: print the link and paste back the final address (signing in on another computer)")
     parser.add_argument("--role", choices=list(ROLES), default="viewer", help="share: access level on the folder")
@@ -437,6 +459,14 @@ def main():
             print(f"{f['name']}:")
             for p in drive.permissions(f["id"]):
                 print(f"  {p['role']:<10} {p['type']:<7} {p.get('emailAddress') or p.get('domain') or ''}")
+        return
+
+    if args.command == "upload":
+        if not args.target or not args.as_user:
+            parser.error("upload needs local files and --as NAME: the uploader becomes the owner")
+        for path in map(Path, args.target):
+            f = upload_file(drive, folder["id"], path.name, path.read_bytes())
+            print(f"{args.as_user} uploaded {f['name']} to {folder['name']} ({f.get('webViewLink', f['id'])})")
         return
 
     if args.command in {"share", "unshare"}:

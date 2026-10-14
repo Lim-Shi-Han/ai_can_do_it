@@ -1,14 +1,19 @@
 #!/usr/bin/env python3
 """Set up Company A's Google Drive for the demo: folders, who can open them, and each person's files.
 
-The service account can create folders and share them but cannot create files (it has no storage), so each
-person uploads their own files and the script does everything else:
+The service account reads files, checks who can open them, and shares folders, but cannot create files (it has
+no storage). Files are created with each owner's own Google sign-in (gdrive_cli.py login NAME):
 
-    python3 gdrive/demo_drive.py build [--date YYYY-MM-DD]   # the files to upload, one folder per person, in gdrive/upload/
-    python3 gdrive/demo_drive.py setup                       # after Zhao's upload: sharing, the processor folder, the old report
+    python3 gdrive/demo_drive.py seed                        # folders as Zhao, sharing, every standing file as its owner
+    python3 gdrive/demo_drive.py upload STEP [NAME]          # during the demo: that step's files, uploaded as their owners
     python3 gdrive/demo_drive.py check                       # every file present, owned by the right person, readable
     python3 gdrive/demo_drive.py access                      # who can open each file, according to Drive
     python3 gdrive/demo_drive.py reset [--yes]               # before a rehearsal: remove Terrance, clear the processor folder
+
+Without sign-ins, people upload by hand instead:
+
+    python3 gdrive/demo_drive.py build [--date YYYY-MM-DD]   # the files to upload, one folder per person, in gdrive/upload/
+    python3 gdrive/demo_drive.py setup                       # after Zhao's upload: sharing, the processor folder, the old report
 """
 
 import argparse
@@ -26,7 +31,8 @@ ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT.parent))
 
 from gdrive.gdrive_cli import (  # noqa: E402
-    API, FOLDER, IDENTITIES, GoogleDrive, load_local_env, persona_email, share, unshare,
+    API, FOLDER, IDENTITIES, GoogleDrive, create_folder, load_local_env, persona_email, share, token_path, unshare,
+    upload_file,
 )
 
 SPEC = ROOT / "demo_drive.json"
@@ -335,12 +341,13 @@ def check(drive, spec):
             print(f"MISSING   {item['owner']:<8} {item['folder']}/{item['name']}")
             ok = False
             continue
-        owner = owner_name(found[0], names)
+        owner, expected_owner = owner_name(found[0], names), uploader(spec, item["owner"])
         size = len(drive.text(found[0]))
-        good = owner == item["owner"] and size > 50
+        good = owner == expected_owner and size > 50
         ok &= good
-        problem = "" if good else (f"  owner is {owner}" if owner != item["owner"] else "  no readable text")
-        print(f"{'ok' if good else 'WRONG':<9} {item['owner']:<8} {item['folder']}/{item['name']}  ({size} chars){problem}")
+        note = "" if expected_owner == item["owner"] else f"  (uploaded by {expected_owner})"
+        problem = "" if good else (f"  owner is {owner}" if owner != expected_owner else "  no readable text")
+        print(f"{'ok' if good else 'WRONG':<9} {item['owner']:<8} {item['folder']}/{item['name']}  ({size} chars){note}{problem}")
     live = [re.compile(re.escape(f["name"]).replace(re.escape("{date}"), r"\d{4}-\d{2}-\d{2}") + "$") for f in spec["live"]]
     for entry in spec["folders"]:
         folder = folders.get(entry["path"])
@@ -357,8 +364,53 @@ def check(drive, spec):
         for item in drive.list_files(f"name = '{quote(title)}' and trashed = false", FIELDS):
             print(f"! '{title}' still exists; {owner_name(item, names)} must delete it")
             ok = False
+    problems = sharing_problems(drive, spec, folders, names)
+    for problem in problems:
+        print(f"! {problem}")
+    ok &= not any(p for p in problems if "during the demo" not in p)
     print("All files are in place." if ok else "Some files are missing or wrong.")
     return ok
+
+
+def sharing_problems(drive, spec, folders, names):
+    """Differences between who can open each folder and the spec (shares reach every folder below)."""
+    rank = {"reader": 1, "commenter": 2, "writer": 3}
+    labels = {"reader": "viewer", "commenter": "commenter", "writer": "editor"}
+    guest = next(f["owner"] for f in spec["live"] if f["step"] == 3)
+    expected, problems, unknown = {"": {}}, [], set()
+    for entry in spec["folders"]:
+        inherited = dict(expected[entry["path"].rpartition("/")[0]])
+        for name, role in entry["share"].items():
+            api_role = {"viewer": "reader", "commenter": "commenter", "editor": "writer"}[role]
+            if rank[api_role] > rank.get(inherited.get(name), 0):
+                inherited[name] = api_role
+        expected[entry["path"]] = inherited
+    for path, want in expected.items():
+        folder = folders.get(path)
+        if not folder:
+            continue
+        actual = {}
+        where = f"{spec['root']}/{path}".rstrip("/")
+        for p in drive.permissions(folder["id"]):
+            email = (p.get("emailAddress") or "").lower()
+            name = names.get(email)
+            if name and name != spec["owner"] and p["role"] != "owner":
+                actual[name] = p["role"]
+            elif not name and email != drive.email.lower() and p["role"] != "owner" and email not in unknown:
+                # e.g. someone's previous Google account after identities.json changed; reported at the top folder only
+                unknown.add(email)
+                problems.append(f"{email or p['type']} can open {where} but is not anyone in identities.json")
+        exchange = any(e.get("exchange") and e["path"] == path for e in spec["folders"])
+        for name in sorted(set(actual) | set(want)):
+            if actual.get(name) == want.get(name):
+                continue
+            if exchange and name == guest and name not in want:
+                problems.append(f"{guest} can open {where}: expected during the demo (steps 3 to 8); run reset before a rehearsal")
+            elif name not in want:
+                problems.append(f"{name} can open {where} ({labels.get(actual[name], actual[name])}) but should not")
+            else:
+                problems.append(f"{name} has {labels.get(actual.get(name), 'no')} access to {where}, should be {labels[want[name]]}")
+    return problems
 
 
 def access(drive, spec):
@@ -378,12 +430,140 @@ def access(drive, spec):
             print(f"{label[:69]:<70}" + "".join(f"{'yes' if everyone or persona_email(n) in emails else '.':<9}" for n in cast))
 
 
+SIGN_INS = {}
+
+
+def uploader(spec, owner):
+    """Who uploads owner's files: the owner, unless the spec names a stand-in because they cannot sign in."""
+    return spec.get("uploaded_by", {}).get(owner, owner)
+
+
+def person(name):
+    """name's own Google sign-in from gdrive_cli.py login, or None if they have not signed in."""
+    if name not in SIGN_INS:
+        SIGN_INS[name] = GoogleDrive(user=name) if token_path(name).exists() else None
+    return SIGN_INS[name]
+
+
+def seed(robot, spec, date, fix_owners=False):
+    """Create what is missing: the folder tree as Zhao, the sharing as the service account, each file as its owner.
+    With fix_owners, a file uploaded by the wrong person is uploaded again by its owner and the old copy trashed."""
+    names = people()
+    owner = person(spec["owner"])
+    if not owner:
+        raise ValueError(f"{spec['owner']} owns the folders; first run: python gdrive/gdrive_cli.py login {spec['owner']}")
+
+    q = f"name = '{quote(spec['root'])}' and mimeType = '{FOLDER}' and 'me' in owners and trashed = false"
+    roots = owner.list_files(q, FIELDS)
+    if len(roots) > 1:
+        raise RuntimeError(f"{spec['owner']} has {len(roots)} folders named '{spec['root']}'; keep one")
+    root = roots[0] if roots else create_folder(owner, "root", spec["root"])
+    if not roots:
+        print(f"{spec['owner']} created folder {spec['root']}")
+    if not any((p.get("emailAddress") or "").lower() == robot.email.lower() for p in owner.permissions(root["id"])):
+        owner.request("POST", f"{API}/files/{root['id']}/permissions", {"sendNotificationEmail": "false"},
+                      payload={"type": "user", "role": "writer", "emailAddress": robot.email})
+        print(f"{spec['owner']} shared {spec['root']} with the service account as editor")
+    # a share on the top folder would reach every folder below it, so people get access folder by folder instead
+    for p in owner.permissions(root["id"]):
+        name = names.get((p.get("emailAddress") or "").lower())
+        if name and name != spec["owner"] and p["role"] != "owner":
+            print(unshare(owner, root, name))
+
+    # folder IDs come from the owner's own calls, so nothing waits for Drive's search to catch up
+    paths = {"": root}
+    for entry in spec["folders"]:
+        parent_path, _, name = entry["path"].rpartition("/")
+        found = [f for f in children(owner, paths[parent_path], name) if f["mimeType"] == FOLDER]
+        paths[entry["path"]] = found[0] if found else create_folder(owner, paths[parent_path]["id"], name)
+        if not found:
+            print(f"{spec['owner']} created folder {spec['root']}/{entry['path']}")
+    for entry in spec["folders"]:
+        for name, role in entry["share"].items():
+            print(share(robot, paths[entry["path"]], name, role))
+
+    files = {}
+    for item in spec["files"]:
+        where = f"{item['folder']}/{item['name']}"
+        existing = children(owner, paths[item["folder"]], item["name"])
+        expected = uploader(spec, item["owner"])
+        client = person(expected)
+        on_behalf = "" if expected == item["owner"] else f" for {item['owner']}"
+        if existing:
+            who = owner_name(existing[0], names)
+            files[item["name"]] = existing[0]
+            current = person(who) if who in names.values() else None
+            if who == expected:
+                print(f"Already there: {where} ({who}{on_behalf})")
+            elif fix_owners and client and current:
+                # upload the owner's copy first, so the file is never missing
+                files[item["name"]] = upload_file(client, paths[item["folder"]]["id"], item["name"], render(item, date))
+                current.request("PATCH", f"{API}/files/{existing[0]['id']}", payload={"trashed": True})
+                print(f"{expected} uploaded {where}{on_behalf}; {who}'s copy moved to {who}'s trash")
+            else:
+                print(f"WRONG owner: {where} is {who}'s, should be {expected}'s; " + (
+                    "run seed --fix-owners" if client and current else f"{expected} must sign in first"))
+            continue
+        if not client:
+            print(f"Skipped {where}: {expected} has not signed in (python gdrive/gdrive_cli.py login {expected})")
+            continue
+        files[item["name"]] = upload_file(client, paths[item["folder"]]["id"], item["name"], render(item, date))
+        print(f"{expected} uploaded {where}{on_behalf}")
+    for item in spec["files"]:
+        for name, role in item.get("share", {}).items():
+            if item["name"] in files:
+                print(share(robot, files[item["name"]], name, role))
+
+    exchange = next(paths[e["path"]] for e in spec["folders"] if e.get("exchange"))
+    if exchange["id"] != robot.folder_id:
+        print(f"! Set GDRIVE_FOLDER_ID={exchange['id']} in .env (the folder shared with the processor)")
+
+
+def exchange_folder(drive, spec):
+    """The folder shared with the processor: GDRIVE_FOLDER_ID when it is that folder, otherwise found by path."""
+    path = next(e["path"] for e in spec["folders"] if e.get("exchange"))
+    if drive.folder_id:
+        try:
+            meta = drive.request("GET", f"{API}/files/{drive.folder_id}", {"fields": FIELDS + ",trashed"})
+            if meta["name"] == path.rpartition("/")[2] and not meta.get("trashed"):
+                return meta
+        except RuntimeError:
+            pass
+    folders, _ = resolve(drive, spec, people())
+    if path not in folders:
+        raise RuntimeError("The processor folder is missing; run seed first")
+    return folders[path]
+
+
+def upload(robot, spec, step, who, date):
+    """A live demo upload: the step's files, each uploaded with its owner's sign-in into the processor folder."""
+    items = [f for f in spec["live"] if f["step"] == step and who in (None, f["owner"])]
+    if not items:
+        raise ValueError(f"No demo file for step {step}" + (f" by {who}" if who else "") +
+                         f"; the demo files are: " + ", ".join(f"step {f['step']} {f['owner']}" for f in spec["live"]))
+    exchange = exchange_folder(robot, spec)
+    for item in items:
+        name = item["name"].replace("{date}", date)
+        if children(robot, exchange, name):
+            print(f"Already uploaded: {name}")
+            continue
+        by = uploader(spec, item["owner"])
+        client = person(by)
+        if not client:
+            raise ValueError(f"{by} has not signed in; run: python gdrive/gdrive_cli.py login {by}")
+        try:
+            upload_file(client, exchange["id"], name, render(item, date))
+        except RuntimeError as exc:
+            if "HTTP 403" in str(exc) or "HTTP 404" in str(exc):
+                raise RuntimeError(f"Drive refused: {by} cannot add files to '{exchange['name']}'. "
+                                   f"Share the folder with {by} as editor first.") from exc
+            raise
+        print(f"{by} uploaded {name} to {exchange['name']}" + ("" if by == item["owner"] else f" for {item['owner']}"))
+
+
 def reset(drive, spec, confirm):
     names = people()
-    folders, notes = resolve(drive, spec, names)
-    exchange = next((folders.get(e["path"]) for e in spec["folders"] if e.get("exchange")), None)
-    if not exchange:
-        raise RuntimeError("The processor folder is missing; run setup first")
+    exchange = exchange_folder(drive, spec)
     guest = next(f["owner"] for f in spec["live"] if f["step"] == 3)
     print(unshare(drive, exchange, guest))
     for item in children(drive, exchange):
@@ -391,19 +571,24 @@ def reset(drive, spec, confirm):
         if not confirm:
             print(f"Would remove {item['name']} ({owner}); rerun with --yes")
             continue
+        # only the owner can trash a file; use their sign-in when there is one
+        client = (person(owner) if owner in names.values() else None) or drive
         try:
-            drive.request("PATCH", f"{API}/files/{item['id']}", payload={"trashed": True})
-            print(f"Moved {item['name']} to the trash")
+            client.request("PATCH", f"{API}/files/{item['id']}", payload={"trashed": True})
+            print(f"Moved {item['name']} to {owner}'s trash")
         except RuntimeError:
-            print(f"{owner} must delete '{item['name']}' in Drive (only the owner can)")
+            print(f"{owner} must delete '{item['name']}' in Drive (only the owner can, and {owner} has not signed in)")
 
 
 def main():
     load_local_env()
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("command", choices=["build", "setup", "check", "access", "reset"])
-    parser.add_argument("--date", default=datetime.now(SGT).date().isoformat(), help="build: the rehearsal date in the demo files")
+    parser.add_argument("command", choices=["seed", "upload", "check", "access", "reset", "build", "setup"])
+    parser.add_argument("target", nargs="*", help="upload: STEP and optionally the uploader's NAME")
+    parser.add_argument("--date", default=datetime.now(SGT).date().isoformat(), help="the rehearsal date in the demo files")
     parser.add_argument("--yes", action="store_true", help="reset: also trash the files in the processor folder")
+    parser.add_argument("--fix-owners", action="store_true", help="seed: have each owner upload their own copy of a file "
+                                                                  "someone else uploaded, and trash the other copy")
     args = parser.parse_args()
     spec = load_spec()
 
@@ -415,7 +600,13 @@ def main():
         return
 
     drive = GoogleDrive()
-    if args.command == "setup":
+    if args.command == "upload":
+        if not args.target or not args.target[0].isdigit() or len(args.target) > 2:
+            parser.error("upload needs a step number and optionally a name, e.g. upload 7 Sheldon")
+        upload(drive, spec, int(args.target[0]), args.target[1] if len(args.target) > 1 else None, args.date)
+    elif args.command == "seed":
+        seed(drive, spec, args.date, args.fix_owners)
+    elif args.command == "setup":
         setup(drive, spec)
     elif args.command == "check":
         sys.exit(0 if check(drive, spec) else 1)

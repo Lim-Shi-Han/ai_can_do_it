@@ -1,6 +1,10 @@
 {
   "root": "Company A",
   "owner": "Zhao",
+  "uploaded_by": {
+    "Sheldon": "Zhao"
+  },
+  "uploaded_by_note": "Who uploads for someone without a Google sign-in. Sheldon's account cannot sign in yet, so Zhao uploads his files; Sheldon keeps his own access. Remove the entry once he has run gdrive_cli.py login Sheldon, then run demo_drive.py seed --fix-owners.",
   "folders": [
     {
       "path": "Payments Engineering",

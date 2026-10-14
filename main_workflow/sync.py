@@ -10,6 +10,20 @@ from .sources import load_sources
 OVERLAP = timedelta(minutes=2)
 
 
+def refresh(index, source, doc_id):
+    """Re-read one document into the index. Returns (updated, removed), both empty if nothing changed."""
+    known = index.version(source.name, doc_id)
+    try:
+        doc = source.fetch(doc_id)
+    except RuntimeError:
+        index.remove(source.name, doc_id)
+        return [], [doc_id] if known is not None else []
+    index.upsert(doc)
+    if known == str(doc.version):
+        return [], []
+    return [{"doc_id": doc.doc_id, "title": doc.title, "version": doc.version, "updated_at": doc.updated_at}], []
+
+
 def sync_source(index, source, full=False):
     started = now_utc()
     cursor = None if full or not index.has_source(source.name) else index.cursor(source.name)
@@ -21,14 +35,9 @@ def sync_source(index, source, full=False):
     for c in changes:
         if not full and c.version is not None and index.version(source.name, c.doc_id) == str(c.version):
             continue
-        try:
-            doc = source.fetch(c.doc_id)
-        except RuntimeError:
-            index.remove(source.name, c.doc_id)
-            removed.append(c.doc_id)
-            continue
-        index.upsert(doc)
-        updated.append({"doc_id": doc.doc_id, "title": doc.title, "version": doc.version, "updated_at": doc.updated_at})
+        u, r = refresh(index, source, c.doc_id)
+        updated += u
+        removed += r
 
     if full:
         seen = {c.doc_id for c in changes}

@@ -192,7 +192,7 @@ function renderEntry(r) {
       <span class="mono">#${r.seq}</span><span class="meta">${esc(new Date(r.ts).toLocaleString())}</span>
       <b>${esc(r.user)}</b><span class="tag">${esc(r.event)}</span>
       ${decisions.length ? `<span class="allow">${allowed} allow</span><span class="deny">${denied} deny</span>` : ""}
-      <span>${esc((d.question || "").slice(0, 90))}</span>
+      <span>${esc((d.question || d.change || "").slice(0, 90))}</span>
     </summary><div class="body">${body}</div></details>`;
 }
 

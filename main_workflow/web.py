@@ -34,7 +34,10 @@ JIRA_CLI = REPO / "jira" / "jira_cli.py"
 JIRA_STATUS_ORDER = ["To Do", "In Progress", "Done"]
 GDRIVE_CLI = REPO / "gdrive" / "gdrive_cli.py"
 CONFLUENCE_CLI = REPO / "confluence" / "confluence_cli.py"
+SLACK_CLI = REPO / "slack_demo" / "slack_cli.py"
 CONTENT_TYPES = {".html": "text/html; charset=utf-8", ".css": "text/css", ".js": "text/javascript"}
+ACCOUNT_KEYS = {"confluence": "atlassian_account_id", "jira": "atlassian_account_id",
+                "gdrive": "google_email", "slack": "slack_user_id"}
 
 SOURCES = load_sources()
 SESSIONS = {}
@@ -74,15 +77,8 @@ def set_audit_role(name, grant):
 
 
 def accounts(user):
-    out = {}
-    for name in SOURCES:
-        if name in ("confluence", "jira"):
-            out[name] = bool(user.get("atlassian_account_id"))
-        elif name == "gdrive":
-            out[name] = bool(user.get("google_email"))
-        else:
-            out[name] = True
-    return out
+    # stand-ins match users by name, so everyone has an account there
+    return {name: bool(user.get(ACCOUNT_KEYS[name])) if name in ACCOUNT_KEYS else True for name in SOURCES}
 
 
 def sync_now():
@@ -271,21 +267,31 @@ def jira_console_options():
             "issues": issues, "statuses": statuses}
 
 
+def slack_members():
+    """Demo users in each Slack channel: live from Slack, or from the stand-in."""
+    if "slack" not in SOURCES:
+        from stand_in_jira_slack.sources import load_state
+        return {c["name"]: c["members"] for c in load_state()["slack"]["channels"].values()}
+    names = {u["slack_user_id"]: u["name"] for u in identities().values() if u.get("slack_user_id")}
+    return {channel: sorted(names[m] for m in members if m in names)
+            for channel, members in SOURCES["slack"].channel_members().items()}
+
+
 def api_console_options(handler, query, body):
-    from stand_in_jira_slack.sources import load_state
-    state = load_state()
-    jira = {"jira": False, "jira_targets": [], "jira_members": {}, "issues": [], "statuses": []}
+    jira ={"jira": False, "jira_targets": [], "jira_members": {}, "issues": [], "statuses": []}
     if "jira" in SOURCES:
         try:
             jira = jira_console_options()
         except Exception as exc:
             log_activity("jira", f"Jira options unavailable: {str(exc)[:120]}", ok=False)
+    slack = slack_members()
     return {
         "users": list(identities()),
-        "channels": [c["name"] for c in state["slack"]["channels"].values()],
-        "channel_members": {c["name"]: c["members"] for c in state["slack"]["channels"].values()},
+        "channels": list(slack),
+        "channel_members": slack,
         **jira,
         "drive": "gdrive" in SOURCES,
+        "slack_stand_in": "slack-fixture" in SOURCES,
         "auditors": [u["name"] for u in identities().values() if u.get("can_audit")],
     }
 
@@ -299,7 +305,10 @@ def api_console_action(handler, query, body):
     action = body.get("action")
     if action == "slack_access":
         verb = "grant" if body.get("grant") else "revoke"
-        ok, text = run_cli([FIXTURE_CLI, verb, body["user"], "slack", body["channel"]])
+        if "slack" in SOURCES:
+            ok, text = run_cli([SLACK_CLI, verb, body["user"], body["channel"]])
+        else:
+            ok, text = run_cli([FIXTURE_CLI, verb, body["user"], "slack", body["channel"]])
     elif action == "jira_access":
         verb = "grant" if body.get("grant") else "revoke"
         ok, text = run_cli([JIRA_CLI, verb, body["user"], body["target"]])
@@ -323,8 +332,12 @@ def api_console_action(handler, query, body):
             # roles, statuses, and comments back to the seed; tickets created during a demo need jira_cli.py rebuild
             jira_ok, jira_text = run_cli([JIRA_CLI, "reset"])
             ok, text = ok and jira_ok, f"{text}; {jira_text}"
-        runbook_ok, runbook_text = run_cli([CONFLUENCE_CLI, "restore-runbook"])
-        ok, text = ok and runbook_ok, f"{text}; {runbook_text}"
+        if "confluence" in SOURCES:
+            runbook_ok, runbook_text = run_cli([CONFLUENCE_CLI, "restore-runbook"])
+            ok, text = ok and runbook_ok, f"{text}; {runbook_text}"
+        if "slack" in SOURCES:
+            slack_ok, slack_text = run_cli([SLACK_CLI, "reset"])
+            ok, text = ok and slack_ok, f"{text}; {slack_text}"
         engineer = identities().get("ShiHan", {})
         if ok and "gdrive" in SOURCES and engineer.get("google_email"):
             ok, drive_text = run_cli([GDRIVE_CLI, "share", "ShiHan"])
@@ -417,6 +430,9 @@ def main():
         log_activity("reset", f"Server start: {text}", ok)
 
     threading.Thread(target=sync_loop, args=(args.sync_interval,), daemon=True).start()
+    if "slack" in SOURCES:
+        from .slack_bot import start as start_slack_bot
+        start_slack_bot(SOURCES, log_activity)
     server = ThreadingHTTPServer((args.host, args.port), Handler)
     print(f"Corporate Chat with Dynamic Access on http://{args.host}:{args.port}  (console: /console)")
     try:

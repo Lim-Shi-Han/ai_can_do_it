@@ -1,3 +1,4 @@
+import os
 import sys
 
 from .base import Candidate, Doc, Source
@@ -19,17 +20,26 @@ def _jira():
 
 
 def _slack():
-    # stand-in until sources/slack.py is ready
-    from stand_in_jira_slack.sources import SlackFixtureSource
-    return SlackFixtureSource()
+    try:
+        from .slack import SlackSource
+        return SlackSource()
+    except (ImportError, ValueError) as exc:
+        # rehearse on the stand-in until Slack is configured
+        print(f"Using the Slack stand-in: {exc}", file=sys.stderr)
+        from stand_in_jira_slack.sources import SlackFixtureSource
+        return SlackFixtureSource()
 
 
 FACTORIES = [_confluence, _gdrive, _jira, _slack]
 
 
 def load_sources():
+    # ONLY_SOURCES=slack (comma-separated) rehearses with some platforms before the others are ready
+    only = {name for name in os.environ.get("ONLY_SOURCES", "").split(",") if name}
     sources = {}
     for factory in FACTORIES:
+        if only and factory.__name__.lstrip("_") not in only:
+            continue
         try:
             source = factory()
         except ValueError as exc:

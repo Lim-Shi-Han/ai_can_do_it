@@ -552,13 +552,15 @@ def upload(robot, spec, step, who, date):
         if not client:
             raise ValueError(f"{by} has not signed in; run: python gdrive/gdrive_cli.py login {by}")
         try:
-            upload_file(client, exchange["id"], name, render(item, date))
+            created = upload_file(client, exchange["id"], name, render(item, date))
         except RuntimeError as exc:
             if "HTTP 403" in str(exc) or "HTTP 404" in str(exc):
                 raise RuntimeError(f"Drive refused: {by} cannot add files to '{exchange['name']}'. "
                                    f"Share the folder with {by} as editor first.") from exc
             raise
-        print(f"{by} uploaded {name} to {exchange['name']}" + ("" if by == item["owner"] else f" for {item['owner']}"))
+        # the file ID lets the web console index the file at once, before Drive's search lists it
+        print(f"{by} uploaded {name} to {exchange['name']}" + ("" if by == item["owner"] else f" for {item['owner']}")
+              + f" (file {created['id']})")
 
 
 def reset(drive, spec, confirm):

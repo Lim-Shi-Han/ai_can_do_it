@@ -204,6 +204,66 @@ def cmd_seed(conf, seed, people, args):
               + (f", {posted} comment(s) posted" if posted else ""))
 
 
+# step 6: the restricted incident report
+
+def report_pages(conf, space_id, title):
+    """The report in any state: current, or in the trash (where its title still blocks a new page)."""
+    return [p for status in ("current", "trashed")
+            for p in conf.api.request("GET", "/wiki/api/v2/pages",
+                                      {"space-id": space_id, "title": title, "status": status}).get("results", [])]
+
+
+def restrict(client, page_id, accounts):
+    """Only these accounts may view or edit the page."""
+    users = [{"type": "known", "accountId": a} for a in accounts]
+    client.request("PUT", f"/wiki/rest/api/content/{page_id}/restriction", payload=[
+        {"operation": op, "restrictions": {"user": users, "group": []}} for op in ("read", "update")])
+
+
+def cmd_incident_report(conf, seed, people, args):
+    """Publish the incident report as its author and restrict it to the readers; --remove deletes it for good."""
+    spec = seed["incident_report"]
+    space = conf.space(spec["space"])
+    found = report_pages(conf, space["id"], spec["title"])
+    if args.remove:
+        for page in found:
+            if page["status"] == "current":
+                conf.api.request("DELETE", f"/wiki/api/v2/pages/{page['id']}")
+            conf.api.request("DELETE", f"/wiki/api/v2/pages/{page['id']}", {"purge": "true"})
+        print(f"Deleted the incident report for good ({len(found)} page(s))" if found else "No incident report to remove")
+        return
+
+    readers = [account_id(people, n) for n in spec["readers"]]
+    current = next((p for p in found if p["status"] == "current"), None)
+    for page in found:
+        if page["status"] == "trashed":  # a trashed copy would block the title
+            conf.api.request("DELETE", f"/wiki/api/v2/pages/{page['id']}", {"purge": "true"})
+    if current:
+        restrict(conf.api, current["id"], readers)
+        print(f"Already published: {spec['space']}: {spec['title']}; restrictions checked (page {current['id']})")
+        page_id = current["id"]
+    else:
+        author = author_clients(conf.api, people, {spec["author"]})[spec["author"]]
+        body = storage(spec["body"].replace("{date}", now_sgt().split()[0]))
+        page_id = author.request("POST", "/wiki/api/v2/pages", payload={
+            "spaceId": space["id"], "status": "current", "title": spec["title"], "parentId": space["homepageId"],
+            "body": {"representation": "storage", "value": body},
+        })["id"]
+        try:
+            restrict(author, page_id, readers)  # the author restricts their own page
+            by = spec["author"]
+        except RuntimeError:
+            restrict(conf.api, page_id, readers)
+            by = "the API account"
+        # the page ID lets the web console index the page at once, before Confluence's search lists it
+        print(f"{spec['author']} published {spec['space']}: {spec['title']}; restricted by {by} to "
+              f"{', '.join(spec['readers'])} (page {page_id})")
+    can = [n for n, u in people.items() if u.get("atlassian_account_id") and conf.can_read(u["atlassian_account_id"], page_id)]
+    print(f"Confluence says these people can open it: {', '.join(can)}")
+    if set(can) != set(spec["readers"]):
+        raise RuntimeError(f"Expected exactly {', '.join(spec['readers'])} to be able to open the report")
+
+
 # inspection
 
 def cmd_check(conf, seed, people, args):
@@ -235,7 +295,8 @@ def cmd_access(conf, seed, people, args):
             print(f"{label[:61]:<62}{cells}")
 
 
-COMMANDS = {"setup": cmd_setup, "seed": cmd_seed, "check": cmd_check, "access": cmd_access}
+COMMANDS = {"setup": cmd_setup, "seed": cmd_seed, "check": cmd_check, "access": cmd_access,
+            "incident-report": cmd_incident_report}
 
 
 def main():
@@ -244,6 +305,7 @@ def main():
     parser.add_argument("command", choices=list(COMMANDS))
     parser.add_argument("--fallback-comments", action="store_true",
                         help="seed: write as the API account (with the author's name) when a JIRA_TOKEN_<NAME> is missing")
+    parser.add_argument("--remove", action="store_true", help="incident-report: delete it for good (rehearsal reset)")
     args = parser.parse_args()
     COMMANDS[args.command](Confluence(Jira()), load_seed(), load_people(), args)
 

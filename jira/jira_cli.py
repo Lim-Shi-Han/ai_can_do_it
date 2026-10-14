@@ -550,6 +550,40 @@ def reserve_keys(api, key, through):
     print(f"{key}: reserved and deleted {len(keys)} placeholder issues; the next issue is {key}-{through + 1}")
 
 
+def refresh_permissions(api, keys):
+    """Make Jira apply the projects' roles now. After a project is recreated, Jira can take many minutes to
+    apply them: a new ticket at the Security level stays invisible even to the Security role, and searches
+    of the project fail with 404. Removing and re-adding one member of a role makes Jira recompute at once.
+    Administrators is left alone, so the API account never drops its own rights."""
+    roles = api.global_roles()
+    for key in keys:
+        for role_name in ("Member", "Viewer", "Security"):
+            users = sorted(api.role_users(key, roles[role_name]))
+            if not users:
+                continue
+            path = f"/rest/api/3/project/{key}/role/{roles[role_name]}"
+            api.request("DELETE", path, {"user": users[0]})
+            try:
+                time.sleep(1)
+            finally:
+                api.request("POST", path, payload={"user": [users[0]]})
+
+
+def until_permitted(api, keys, action, tries=8, wait=10):
+    """Run action(). While Jira refuses it (403 or 404) because the projects' roles are not applied yet,
+    refresh them and try again, for up to about two minutes."""
+    for attempt in range(tries):
+        try:
+            return action()
+        except RuntimeError as exc:
+            if attempt == tries - 1 or not re.search(r"HTTP (403|404) ", str(exc)):
+                raise
+            if attempt == 0:
+                print(f"{', '.join(keys)}: Jira has not applied the project roles yet; refreshing them and retrying")
+            refresh_permissions(api, keys)
+            time.sleep(wait)
+
+
 def create_issue(api, item, people, levels, clients):
     key = project_of(item["key"])
     fields = {
@@ -569,9 +603,10 @@ def create_issue(api, item, people, levels, clients):
     created = api.request("POST", "/rest/api/3/issue", payload={"fields": fields})
     if created["key"] != item["key"]:
         raise RuntimeError(f"Expected {item['key']} but Jira assigned {created['key']}; stopping")
-    api.transition(created["key"], item["status"])
+    # a freshly recreated project may not let anyone read the new ticket, or its members comment, yet
+    until_permitted(api, [key], lambda: api.transition(created["key"], item["status"]))
     for comment in item["comments"]:
-        post_comment(api, clients, created["key"], comment["author"], comment["text"])
+        until_permitted(api, [key], lambda c=comment: post_comment(api, clients, created["key"], c["author"], c["text"]))
     print(f"Created {created['key']} [{item['status']}] {item['summary']}")
     return created["key"]
 
@@ -609,7 +644,8 @@ def add_links(api, seed, existing):
     for item in seed["issues"]:
         key = existing.get(item["summary"])
         for link in item.get("links", []):
-            current = api.issue(key, "issuelinks")["fields"].get("issuelinks") or []
+            current = until_permitted(api, [project_of(key)],
+                                      lambda: api.issue(key, "issuelinks"))["fields"].get("issuelinks") or []
             linked = {(l.get("outwardIssue") or l.get("inwardIssue") or {}).get("key") for l in current}
             if link["to"] in linked:
                 continue
@@ -623,8 +659,9 @@ def project_keys(seed):
 
 
 def save_manifest(api, seed):
-    issues = api.search(f"project in ({', '.join(project_keys(seed))}) ORDER BY key ASC",
-                        "summary,status,updated,labels,security")
+    keys = project_keys(seed)
+    issues = until_permitted(api, keys, lambda: api.search(f"project in ({', '.join(keys)}) ORDER BY key ASC",
+                                                           "summary,status,updated,labels,security"))
     data = {
         "source": "jira",
         "site": api.site,
@@ -645,7 +682,7 @@ def cmd_seed(api, seed, people, args):
     clients = author_clients(api, people, authors, allow_fallback=args.fallback_comments)
     keys = project_keys(seed)
     existing = {i["fields"]["summary"]: i["key"]
-                for i in api.search(f"project in ({', '.join(keys)})", "summary")}
+                for i in until_permitted(api, keys, lambda: api.search(f"project in ({', '.join(keys)})", "summary"))}
     levels = {p["key"]: api.security_levels(p["key"]) for p in seed["projects"] if p["issue_security"]}
     for project in seed["projects"]:
         reserve_keys(api, project["key"], project.get("reserve_through"))
@@ -802,8 +839,9 @@ def cmd_reset(api, seed, people, args):
     """Restore role memberships and the seed tickets. Tickets created during a demo stay; use rebuild for those."""
     roles = api.global_roles()
     role_changes = sum(sync_roles(api, p, people, roles) for p in seed["projects"])
+    projects = project_keys(seed)
     keys = {i["fields"]["summary"]: i["key"]
-            for i in api.search(f"project in ({', '.join(project_keys(seed))})", "summary")}
+            for i in until_permitted(api, projects, lambda: api.search(f"project in ({', '.join(projects)})", "summary"))}
     status_changes = removed = 0
     for item in seed["issues"]:
         key = keys.get(item["summary"])

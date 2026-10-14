@@ -9,7 +9,7 @@
   "issues": [
     {
       "key": "ACC-37",
-      "id": "10256",
+      "id": "10672",
       "summary": "Read-only BigQuery role for the data team's student analyst",
       "status": "Done",
       "labels": [
@@ -18,11 +18,11 @@
       ],
       "restricted": false,
       "url": "https://hackathontencent.atlassian.net/browse/ACC-37",
-      "updated_at": "2026-10-14T06:59:23.871Z"
+      "updated_at": "2026-10-14T18:47:40.955Z"
     },
     {
       "key": "ACC-38",
-      "id": "10257",
+      "id": "10673",
       "summary": "Xero read-only login for the external tax adviser",
       "status": "Done",
       "labels": [
@@ -32,11 +32,11 @@
       ],
       "restricted": false,
       "url": "https://hackathontencent.atlassian.net/browse/ACC-38",
-      "updated_at": "2026-10-14T06:59:33.003Z"
+      "updated_at": "2026-10-14T18:47:43.427Z"
     },
     {
       "key": "ACC-39",
-      "id": "10258",
+      "id": "10674",
       "summary": "GitHub write rights on the mobile-app repository for a mobile engineer who joined this month",
       "status": "In Progress",
       "labels": [
@@ -45,11 +45,11 @@
       ],
       "restricted": false,
       "url": "https://hackathontencent.atlassian.net/browse/ACC-39",
-      "updated_at": "2026-10-14T06:59:40.868Z"
+      "updated_at": "2026-10-14T18:47:45.768Z"
     },
     {
       "key": "ACC-40",
-      "id": "10259",
+      "id": "10675",
       "summary": "Okta group update: add two analysts to finance-tools",
       "status": "To Do",
       "labels": [
@@ -58,11 +58,11 @@
       ],
       "restricted": false,
       "url": "https://hackathontencent.atlassian.net/browse/ACC-40",
-      "updated_at": "2026-10-14T06:59:45.525Z"
+      "updated_at": "2026-10-14T18:47:47.358Z"
     },
     {
       "key": "FIN-17",
-      "id": "10215",
+      "id": "10676",
       "summary": "Accrue September card-network fees for month-end close",
       "status": "Done",
       "labels": [
@@ -71,11 +71,11 @@
       ],
       "restricted": false,
       "url": "https://hackathontencent.atlassian.net/browse/FIN-17",
-      "updated_at": "2026-10-13T11:19:04.668Z"
+      "updated_at": "2026-10-14T18:47:49.818Z"
     },
     {
       "key": "FIN-18",
-      "id": "10216",
+      "id": "10677",
       "summary": "Update FX revaluation rates for the October close",
       "status": "In Progress",
       "labels": [
@@ -84,11 +84,11 @@
       ],
       "restricted": false,
       "url": "https://hackathontencent.atlassian.net/browse/FIN-18",
-      "updated_at": "2026-10-13T11:19:06.308Z"
+      "updated_at": "2026-10-14T18:47:51.967Z"
     },
     {
       "key": "FIN-19",
-      "id": "10217",
+      "id": "10678",
       "summary": "Chase unapplied incoming transfers older than 30 days",
       "status": "To Do",
       "labels": [
@@ -96,11 +96,11 @@
       ],
       "restricted": false,
       "url": "https://hackathontencent.atlassian.net/browse/FIN-19",
-      "updated_at": "2026-10-13T11:19:08.358Z"
+      "updated_at": "2026-10-14T18:47:53.476Z"
     },
     {
       "key": "FIN-20",
-      "id": "10218",
+      "id": "10679",
       "summary": "Prepare GST filing workpapers for July to September",
       "status": "To Do",
       "labels": [
@@ -109,11 +109,11 @@
       ],
       "restricted": false,
       "url": "https://hackathontencent.atlassian.net/browse/FIN-20",
-      "updated_at": "2026-10-13T11:19:09.935Z"
+      "updated_at": "2026-10-14T18:47:55.038Z"
     },
     {
       "key": "PAY-90",
-      "id": "10350",
+      "id": "10609",
       "summary": "Add PayNow QR as a checkout option for SME businesses",
       "status": "Done",
       "labels": [
@@ -122,11 +122,11 @@
       ],
       "restricted": false,
       "url": "https://hackathontencent.atlassian.net/browse/PAY-90",
-      "updated_at": "2026-10-14T08:38:25.347Z"
+      "updated_at": "2026-10-14T18:38:38.768Z"
     },
     {
       "key": "PAY-91",
-      "id": "10351",
+      "id": "10610",
       "summary": "FX amounts off by 0.01 on multi-currency invoices",
       "status": "In Progress",
       "labels": [
@@ -135,11 +135,11 @@
       ],
       "restricted": false,
       "url": "https://hackathontencent.atlassian.net/browse/PAY-91",
-      "updated_at": "2026-10-14T08:38:32.835Z"
+      "updated_at": "2026-10-14T18:38:41.504Z"
     },
     {
       "key": "PAY-92",
-      "id": "10352",
+      "id": "10611",
       "summary": "Add a circuit breaker to the card-network client",
       "status": "Done",
       "labels": [
@@ -148,11 +148,11 @@
       ],
       "restricted": false,
       "url": "https://hackathontencent.atlassian.net/browse/PAY-92",
-      "updated_at": "2026-10-14T08:38:40.225Z"
+      "updated_at": "2026-10-14T18:38:44.223Z"
     },
     {
       "key": "PAY-93",
-      "id": "10353",
+      "id": "10612",
       "summary": "Run a standby-region switchover drill for the card-network gateway",
       "status": "Done",
       "labels": [
@@ -162,11 +162,11 @@
       ],
       "restricted": false,
       "url": "https://hackathontencent.atlassian.net/browse/PAY-93",
-      "updated_at": "2026-10-14T08:38:47.375Z"
+      "updated_at": "2026-10-14T18:38:46.944Z"
     },
     {
       "key": "PAY-94",
-      "id": "10354",
+      "id": "10613",
       "summary": "Quarterly rotation of card-gateway API keys",
       "status": "Done",
       "labels": [
@@ -175,11 +175,11 @@
       ],
       "restricted": true,
       "url": "https://hackathontencent.atlassian.net/browse/PAY-94",
-      "updated_at": "2026-10-14T08:38:54.763Z"
+      "updated_at": "2026-10-14T18:44:57.352Z"
     },
     {
       "key": "PAY-95",
-      "id": "10355",
+      "id": "10614",
       "summary": "Increase the batch queue-depth alert threshold",
       "status": "To Do",
       "labels": [
@@ -188,11 +188,11 @@
       ],
       "restricted": false,
       "url": "https://hackathontencent.atlassian.net/browse/PAY-95",
-      "updated_at": "2026-10-14T08:38:58.839Z"
+      "updated_at": "2026-10-14T18:44:58.872Z"
     },
     {
       "key": "PAY-96",
-      "id": "10356",
+      "id": "10615",
       "summary": "Instant payouts to IDR bank accounts (Q4 roadmap)",
       "status": "To Do",
       "labels": [
@@ -201,11 +201,11 @@
       ],
       "restricted": false,
       "url": "https://hackathontencent.atlassian.net/browse/PAY-96",
-      "updated_at": "2026-10-14T08:39:03.223Z"
+      "updated_at": "2026-10-14T18:45:00.475Z"
     },
     {
       "key": "PAY-97",
-      "id": "10357",
+      "id": "10616",
       "summary": "Payout CSV uses UTC instead of SGT for the daily cut-off",
       "status": "In Progress",
       "labels": [
@@ -214,11 +214,11 @@
       ],
       "restricted": false,
       "url": "https://hackathontencent.atlassian.net/browse/PAY-97",
-      "updated_at": "2026-10-14T08:39:10.417Z"
+      "updated_at": "2026-10-14T18:45:02.921Z"
     },
     {
       "key": "PAY-98",
-      "id": "10358",
+      "id": "10617",
       "summary": "Remove the deprecated v1 refunds endpoint",
       "status": "To Do",
       "labels": [
@@ -227,11 +227,11 @@
       ],
       "restricted": false,
       "url": "https://hackathontencent.atlassian.net/browse/PAY-98",
-      "updated_at": "2026-10-14T08:39:14.538Z"
+      "updated_at": "2026-10-14T18:45:04.524Z"
     },
     {
       "key": "PAY-99",
-      "id": "10359",
+      "id": "10618",
       "summary": "Patch TLS settings flagged by the PCI DSS scan",
       "status": "In Progress",
       "labels": [
@@ -240,7 +240,7 @@
       ],
       "restricted": true,
       "url": "https://hackathontencent.atlassian.net/browse/PAY-99",
-      "updated_at": "2026-10-14T08:39:21.604Z"
+      "updated_at": "2026-10-14T18:45:06.908Z"
     }
   ]
 }

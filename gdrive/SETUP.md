@@ -34,11 +34,14 @@ The folder ID is not a secret. It is the folder shared with the payment processo
 
 ## 2. Install
 
-Python 3.10 or later, plus one package:
+The repository's packages (including `cryptography`, which Drive needs) are listed in `pyproject.toml`. Install them once with [uv](https://docs.astral.sh/uv/):
 
 ```bash
-pip install cryptography
+uv sync                          # creates .venv from pyproject.toml and uv.lock
+.venv\Scripts\activate           # Windows; on macOS or Linux: source .venv/bin/activate
 ```
+
+With the environment active, every `python ...` command in these docs uses it. Without activating, prefix commands with `uv run`, for example `uv run python -m main_workflow.web`. To add a package, run `uv add <package>`; it updates `pyproject.toml` and `uv.lock`, which are both committed.
 
 ## 3. Check that it works
 

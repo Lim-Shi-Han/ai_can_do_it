@@ -7,6 +7,7 @@ Serves the assistant at / and the source platform console at /console.
 
 import argparse
 import json
+import re
 import secrets
 import sys
 import threading
@@ -22,9 +23,10 @@ from .audit import AuditLog, now_utc
 from .cli import parse_since
 from .index import Index
 from .memory import Memory
-from .rehearsal import CONFLUENCE_CLI, FIXTURE_CLI, GDRIVE_CLI, JIRA_CLI, SLACK_CLI, reset_platforms, run_cli
+from .rehearsal import (CONFLUENCE_CLI, DEMO_DRIVE, DEMO_SPACES, FIXTURE_CLI, GDRIVE_CLI, JIRA_CLI, SLACK_CLI,
+                        reset_platforms, run_cli)
 from .sources import load_sources
-from .sync import run_once
+from .sync import refresh, run_once
 
 ROOT = Path(__file__).resolve().parent
 STATIC = ROOT / "static"
@@ -73,6 +75,24 @@ def set_audit_role(name, grant):
 def accounts(user):
     # stand-ins match users by name, so everyone has an account there
     return {name: bool(user.get(ACCOUNT_KEYS[name])) if name in ACCOUNT_KEYS else True for name in SOURCES}
+
+
+CREATED_RE = re.compile(r"\((file|page) ([\w-]+)\)$")
+
+
+def index_created(text):
+    """Index a file or page a console action just created, by its ID ("(file ID)" or "(page ID)" at the end of
+    the message), without waiting for Drive's or Confluence's search to list it."""
+    m = CREATED_RE.search(text)
+    source = SOURCES.get({"file": "gdrive", "page": "confluence"}[m.group(1)]) if m else None
+    if source is None:
+        return
+    with SYNC_LOCK:
+        updated, removed = refresh(Index(), source, m.group(2))
+    if updated or removed:
+        AuditLog().append("system", "sync", {"source": source.name, "updated": updated, "removed": removed, "full": False})
+    for u in updated:
+        log_activity("sync", f"Indexed {source.name} {u['title']} v{u['version']}")
 
 
 def sync_now(full=False):
@@ -316,7 +336,19 @@ def api_console_action(handler, query, body):
     elif action == "jira_status":
         ok, text = run_cli([JIRA_CLI, "set-status", body["key"], body["status"]])
     elif action == "drive_access":
-        ok, text = run_cli([GDRIVE_CLI, "share" if body.get("grant") else "unshare", body["user"]])
+        if body.get("grant"):
+            ok, text = run_cli([GDRIVE_CLI, "share", body["user"], "--role", body.get("role", "viewer")])
+        else:
+            ok, text = run_cli([GDRIVE_CLI, "unshare", body["user"]])
+    elif action == "drive_upload":
+        # uploaded with the owner's own Google sign-in, so Drive itself decides whether they may
+        ok, text = run_cli([DEMO_DRIVE, "upload", str(int(body["step"])), body["owner"]], 300)
+        if ok:
+            index_created(text)
+    elif action == "incident_report":
+        ok, text = run_cli([DEMO_SPACES, "incident-report"], 300)
+        if ok:
+            index_created(text)
     elif action == "audit_role":
         ok, text = True, set_audit_role(body["user"], bool(body.get("grant")))
     elif action == "runbook_update":

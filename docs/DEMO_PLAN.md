@@ -10,7 +10,7 @@ Deadlines: submission **16 Oct 2026**; Demo Day **3 Nov 2026** (to be confirmed)
 |---|---|---|---|
 | 1 | Processor reports timeouts in the shared Slack channel | Terrance, Zhao | — |
 | 2 | Zhao opens the incident ticket **PAY-100** | Zhao | — |
-| 3 | Vendor gets temporary Drive access (**ACC-41**) and uploads the timeout log | Zhao, Sheldon, Terrance | 4 (setup) |
+| 3 | Vendor gets temporary Drive access (**ACC-41**) from Zhao and uploads the timeout log | Sheldon, Zhao, Terrance | 4 (setup) |
 | 4 | ShiHan diagnoses with the chat | ShiHan | **1 Unified query** |
 | 5 | Rollback request **PAY-101**, approved by Ivan | ShiHan, Ivan | — |
 | 6 | Recovery; Ivan writes the restricted incident report and opens **PAY-102** 🔒 and **PAY-103** | ShiHan, Ivan | 3 (setup) |
@@ -61,9 +61,19 @@ Cross-cutting requirements shown along the way: answers only from permitted sour
 | `#vendor-payprocessor` (shared with the processor) | Terrance, Zhao, Sheldon, ShiHan |
 | `#payment-incident-001` (internal, opened in step 2) | ShiHan, Zhao, Ivan |
 
-**Google Drive** (to set up by the Drive owner): folder `INC-PAY-001`, owned by Zhao's Google account; ShiHan can read; Sheldon can edit and share; Terrance gets **edit** access in step 3 (to upload) and loses it in step 8.
+**Google Drive** (folder sharing; set up by `gdrive/demo_drive.py seed`). Zhao's Google account owns the folders; each person owns the files they wrote.
 
-Every layer of the brief's permission models appears: space and project level (Terrance has no Jira or Confluence access; ShiHan has no `FINOPS` or `SECOPS`), page and issue level (the incident report, PAY-102), channel membership, folder sharing, and separation of duties (Elson).
+| | ShiHan | Zhao | Ivan | Sheldon | Terrance | Elson |
+|---|---|---|---|---|---|---|
+| `Company A/Payments Engineering` | ✓ edit | ✓ owner | ✓ edit | · | · | · |
+| `Company A/Finance` | one file (comment) | ✓ owner | · | ✓ edit | · | · |
+| `Company A/Security` | · | ✓ owner | ✓ edit | · | · | · |
+| `Company A/Vendors/PayProcessor` | ✓ view | ✓ owner | ✓ comment | ✓ edit | · | · |
+| `…/PayProcessor/INC-PAY-001 shared with PayProcessor` | ✓ view | ✓ owner | ✓ comment | ✓ edit | ✓ edit, steps 3 to 8 only | · |
+
+The processor folder is the only folder shared outside Company A, and it is empty before step 3. 15 standing files sit in the other folders as noise; none of them is found by the demo questions.
+
+Every layer of the brief's permission models appears: space and project level (Terrance has no Jira or Confluence access; ShiHan has no `FINOPS` or `SECOPS`), page and issue level (the incident report, PAY-102), channel membership, folder and file sharing (the processor folder; one Finance file shared with ShiHan alone), external sharing (Terrance), and separation of duties (Elson).
 
 ## Ticket numbers
 
@@ -92,14 +102,21 @@ The flow table still shows older numbers (PAY-102 for vendor access, PAY-103 for
 - **Prepare:** the step command that creates PAY-100 as Zhao (to build, needs the final ticket text).
 
 ### 3. Vendor gets Drive access (scenario 4 setup)
-- **Action:** Zhao asks the processor for logs. Sheldon opens **ACC-41** for temporary edit access to the `INC-PAY-001` folder; Ivan and Zhao sign off in the ticket; Sheldon shares the folder with Terrance. Terrance uploads the **processor timeout log** (failed authorizations per minute from 14:10).
-- **Expected:** the console's access grid shows Terrance on the Drive folder.
-- **Prepare:** sharing the folder as **editor** (`gdrive_cli.py share` currently shares as reader only); the timeout log file.
+- **Action:** Zhao asks the processor for logs. Sheldon opens **ACC-41** for temporary edit access to the folder `INC-PAY-001 shared with PayProcessor`; Ivan and Zhao sign off in the ticket; Zhao shares the folder with Terrance as editor. Terrance uploads the **processor timeout log**: requests and timeouts per minute from 14:00, exported at 14:26 (387 timeouts since 14:10, rising).
+- **Commands:**
+
+```bash
+python gdrive/gdrive_cli.py share Terrance --role editor   # Zhao grants access (console: Drive, Terrance, Editor, Share)
+python gdrive/demo_drive.py upload 3                       # Terrance uploads with his own Google sign-in (console: Step 3 upload)
+```
+
+- **Expected:** the console's access grid shows Terrance on the folder, and Drive shows the file with Terrance as owner. Optional: run the upload before the share to show Drive refusing it.
+- **Note:** share as **Editor**: a viewer cannot upload, and Drive refuses the upload.
 
 ### 4. Diagnose with the chat (scenario 1)
 - **Action:** press **Sync now**, then ShiHan asks: *"PAY-100: what changed recently on payment-service, what does the runbook say for timeouts, and what has the processor reported?"*
 - **Expected:** one answer citing all four platforms: PAY-100 (Jira), the processor's report and the 14:07 rollout notice (Slack), the processor timeout log (Drive), and the recovery runbook (Confluence: connection saturation, pause rollouts and roll back after approval). Likely cause: the 14:07 rollout.
-- **Note:** the search uses up to 6 keywords, so "timeouts" and "processor" are currently dropped from this question; raise the limit or check that the Slack and Drive items are still found.
+- **Note:** the search uses up to 6 keywords, so "timeouts" and "processor" are currently dropped from this question. The Drive timeout log is still found, because it names the `payment-service` endpoint (checked on the real Drive); check that the Slack items are found too, or raise the limit.
 
 ### 5. Rollback approved
 - **Action:** ShiHan opens rollback change request **PAY-101** and asks Ivan for approval on PAY-100 and in `#payment-incident-001`. Ivan approves in both places. ShiHan pauses rollouts and starts the rollback at 14:37.
@@ -109,20 +126,21 @@ The flow table still shows older numbers (PAY-102 for vendor access, PAY-103 for
 - **Action:** at 15:02 ShiHan reports that payments have recovered. PAY-101 is done and PAY-100 resolved. Ivan writes the **incident report** in `PAYOPS`, restricted to ShiHan, Zhao, and Ivan, and opens **PAY-102** 🔒 (security assessment: no breach) and **PAY-103** (prevent recurrence, assigned to ShiHan).
 - **Show:** the console's access grid. Elson can read `PAYOPS` but not the report (page level); ShiHan can read `PAY` but not PAY-102 (issue level).
 - **Rule:** the incident report must **not** name PAY-102 or its title. An answer that repeats a ticket the asker cannot see is replaced by the "couldn't find information" sentence. Write "a separate security assessment is tracked by the security team".
-- **Prepare:** the step command that creates the report as Ivan (Ivan's own token) and restricts it immediately (to build, needs the final text).
+- **Command:** console **Step 6: Ivan publishes the incident report**, or `python confluence/demo_spaces.py incident-report`. Ivan publishes it with his own token and restricts viewing and editing to ShiHan, Zhao, and Ivan; the command then prints who Confluence lets open it. The text is in `confluence/demo_spaces.json` (`incident_report`); it gives the timeline, root cause, provisional impact, and follow-ups, and says a separate security assessment is tracked by the security team.
 
 ### 7. Two-sided reconciliation (scenario 2)
-- **Action:** Terrance uploads the **settlement export** and asks: *"Reconcile the failed payments for INC-PAY-001."* The answer reconciles only the processor's side and lists Company A's payment records as **missing**. Terrance asks Sheldon in `#vendor-payprocessor`; Sheldon uploads the **internal payment ledger extract**, replies, and tracks the work in **FIN-21**. Press **Sync now**. Terrance asks again.
-- **Expected:** both files are found and the answer gives the reconciliation: **1,312 timed-out attempts, 214 retried successfully, no duplicate charges**.
+- **Action:** Terrance uploads the **settlement export** (`demo_drive.py upload 7 Terrance`), presses **Sync now**, and asks: *"Reconcile the failed payments for INC-PAY-001."* The answer reconciles only the processor's side (1,312 failed with no answer, none settled; the processor cannot tell which later payments were retries) and lists Company A's payment records as **missing**. Terrance asks Sheldon in `#vendor-payprocessor`; Sheldon shares a copy of Company A's payment records made for the processor (`demo_drive.py upload 7 Sheldon`), replies, and tracks the work in **FIN-21**. Press **Sync now**. Terrance asks again.
+- **Expected:** the processor's two files and Company A's copy are found, and the answer gives the reconciliation: **1,312 timed-out attempts, 214 retried successfully, no duplicate charges** (87 late approvals had their card holds released).
 - **Shows:** a file added minutes ago changes the answer within one sync (60 s).
+- **Note:** Sheldon's Google account cannot sign in yet, so Zhao uploads his copy and Drive shows Zhao as its owner (`uploaded_by` in `gdrive/demo_drive.json`).
 
 ### 8. Case closed, access removed (scenario 4)
-- **Action:** with PAY-100 and FIN-21 closed, Zhao notices the processor can read Company A's internal ledger extract: *"the processor doesn't need our folder any more."* Sheldon **unshares** Terrance (console: Drive **Unshare**) and closes ACC-41 ("access revoked, case closed"). Terrance asks a follow-up in the same chat.
-- **Expected:** nothing from Drive, and the earlier reconciliation answer is removed from the chat ("earlier answers were removed"), without saying which source caused it.
+- **Action:** with PAY-100 and FIN-21 closed, Zhao notices the processor can still open Company A's payment records: *"the processor doesn't need our folder any more."* Sheldon **unshares** Terrance (`python gdrive/gdrive_cli.py unshare Terrance`, or console: Drive **Unshare**) and closes ACC-41 ("access revoked, case closed"). Terrance asks a follow-up in the same chat.
+- **Expected:** nothing from Company A's files in Drive, and the earlier reconciliation answer is removed from the chat ("earlier answers were removed"), without saying which source caused it. Terrance still sees the two files he uploaded himself: in personal Google accounts the uploader owns the file. Company A's payment records, and with them the 214 figure, are gone.
 
 ### 9. Vendor asks for the report (scenario 3)
 - **Action:** Terrance asks: *"Was this a security breach? Show me the incident report for INC-PAY-001."* Ivan asks the same question.
-- **Expected:** Terrance gets the neutral "couldn't find information" sentence, with no hint that the report exists. Ivan gets the incident report and PAY-102 (no breach).
+- **Expected:** Terrance gets the neutral "couldn't find information" sentence, with no hint that the report exists. Ivan gets the incident report and PAY-102 (no breach). Terrance's own Drive files use the processor's case number (PP-58213), not INC-PAY-001, so they do not match this question.
 - **Recommended addition:** ShiHan asks too, and gets the report but **not** PAY-102. Terrance has no access to `PAYOPS` or `PAY` at all, so Terrance alone only shows space and project level; ShiHan shows the page and issue levels.
 
 ### 10. Compliance review (scenario 5)
@@ -148,32 +166,37 @@ python -m main_workflow.cli audit verify
 | Confluence source reads all four spaces; runbook v1 and v2 tooling | Confluence | ✅ Done |
 | Permission checks run in parallel; real access verified with each person's own token | — | ✅ Done |
 | Live step commands for the Jira tickets (steps 2, 3, 5, 6, 7, 8, 11) | Jira | ⬜ Needs the final ticket text |
-| Ivan's incident report, created and restricted live (step 6) | Confluence | ⬜ Needs the final text |
+| Ivan's incident report, created and restricted live (step 6): command and console button; checked that Ivan, ShiHan, and Zhao get it in step 9 and Elson, Sheldon, and Terrance are denied | Confluence | ✅ Done (review the wording in `demo_spaces.json`) |
 | Flow table renumbered to the keys above; Ivan's role name matching `identities.json` ("security engineer" there) | Flow | ⬜ |
 | Slack: `#vendor-payprocessor` (shared) and `#payment-incident-001`, the step messages | Slack | ⬜ |
-| Drive: folder sharing as above, sharing Terrance as **editor**, the three files (timeout log, settlement export, ledger extract) | Drive | ⬜ |
-| Local run: Drive key file and folder ID in `.env`; the LLM endpoint (see below) | Whoever demos | ⬜ |
+| Drive: `Company A` folders and sharing as above, 15 standing files by their owners, the old metrics report removed | Drive | ✅ Done |
+| Drive: the three demo files (timeout log, settlement export, payment records copy), uploaded as their owners by `demo_drive.py upload`; steps 3 to 9 rehearsed on the real Drive (gate only, no LLM) | Drive | ✅ Done |
+| Drive: a Google account that can sign in for Sheldon (until then Zhao uploads his files) | Drive | ⬜ |
+| Console: Drive **Share** with a role, the three demo upload buttons, and the step 6 report button | — | ✅ Done |
+| Local run: Drive files from Shi Han (`gdrive/SETUP.md`); the LLM endpoint (see below) | Whoever demos | ⬜ |
 | Five worked examples with screenshots from a full rehearsal | Team | ⬜ by 16 Oct |
 | Architecture and trust-boundary diagram; deck | Team | ⬜ by 16 Oct |
 | CodeBuddy or WorkBuddy chat screenshots (at least 3) | Team | ⬜ by 16 Oct, required for scoring |
 
 ## Running it locally
 
+0. Python environment: `uv sync` once, then activate `.venv` in each terminal (`.venv\Scripts\activate` on Windows, `source .venv/bin/activate` on macOS or Linux). See `main_workflow/README.md`.
 1. `.env` has the Jira keys (`JIRA_URL`, `JIRA_EMAIL`, `JIRA_API_TOKEN`, `JIRA_PROJECT_KEY=PAY,ACC,FIN`), the persona tokens (`JIRA_TOKEN_SHIHAN`, `JIRA_TOKEN_IVAN`, `JIRA_TOKEN_SHELDON`), and `CONFLUENCE_SPACE_KEYS=HANDBOOK,PAYOPS,FINOPS,SECOPS`. Confluence uses the Jira credentials.
-2. Drive: `gdrive/service_account.json` (not in Git) plus `GOOGLE_SERVICE_ACCOUNT_FILE` and `GDRIVE_FOLDER_ID` in `.env`; without them the app skips Drive.
-3. LLM: the app calls `http://127.0.0.1:8500/v1` (model `qwen-spec-poc`). Tunnel to the DGX first: `ssh -L 8500:localhost:8500 <dgx-host>`. To use another OpenAI-compatible server, set `VLLM_BASE_URL` and `VLLM_MODEL` in the terminal; they are not read from `.env`.
+2. Drive: follow `gdrive/SETUP.md`. You need `gdrive/service_account.json`, `gdrive/oauth_client.json`, and the persona sign-ins in `gdrive/tokens/` from Shi Han (none of them in Git), plus `GOOGLE_SERVICE_ACCOUNT_FILE` and `GDRIVE_FOLDER_ID` in `.env`. Without the key file and folder ID the app skips Drive; without the sign-ins the demo uploads fail.
+3. LLM: the app calls `VLLM_BASE_URL` with `VLLM_MODEL`, read from `.env` (see `.env.example`: `http://127.0.0.1:8038/v1`, `deepseek-v4-flash`); a variable set in the terminal wins. Open the port mapping to the model server first, then check it answers: `curl http://127.0.0.1:8038/v1/models` should list the model. Otherwise every question and ticket draft fails with "No connection could be made because the target machine actively refused it".
 4. `main_workflow/identities.json` (not in Git; copy `identities.example.json` and fill in the real emails, or get it from a teammate).
 
 ## Before each rehearsal
 
 1. **Jira:** `python jira/jira_cli.py rebuild --yes` at least 30 minutes before. It removes the previous run's tickets so the live tickets get PAY-100, ACC-41, and FIN-21 again. Wait until `python jira/jira_cli.py access` matches the table above.
-2. **Confluence:** delete the previous run's incident report (command to come), then `python confluence/confluence_cli.py restore-runbook`.
-3. **Drive:** remove the previous run's uploads; make sure Terrance is not shared.
+2. **Confluence:** `python confluence/demo_spaces.py incident-report --remove` (deletes the previous run's report for good, so the title is free again), then `python confluence/confluence_cli.py restore-runbook`. Console **Reset rehearsal** does both.
+3. **Drive:** `python gdrive/demo_drive.py reset --yes` (removes Terrance and deletes the previous run's uploads as their owners), then `python gdrive/demo_drive.py check`. Persona sign-ins expire after 7 days, so the day before, run `python gdrive/gdrive_cli.py check --as` for Zhao, ShiHan, Ivan, and Terrance.
 4. Sign in once to Jira and Confluence with each persona account; Jira's permission check can lag until an account has signed in.
 5. Clear the audit trail and start the app (this also resets the Slack stand-in):
 
 ```bash
 rm -f main_workflow/audit.db main_workflow/audit.head
+python -m main_workflow.sync --once --full   # rebuild the search index from what is in each platform now
 python -m main_workflow.web
 ```
 

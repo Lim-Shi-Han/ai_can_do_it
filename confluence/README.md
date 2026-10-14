@@ -34,6 +34,15 @@ python3 confluence/demo_spaces.py check    # roles per space
 python3 confluence/demo_spaces.py access   # who can read each page, according to Confluence
 ```
 
+## Step 6: the incident report
+
+```bash
+python3 confluence/demo_spaces.py incident-report            # Ivan publishes it in PAYOPS and restricts it to ShiHan, Zhao, and Ivan
+python3 confluence/demo_spaces.py incident-report --remove   # rehearsal reset: deletes it for good
+```
+
+Ivan writes and restricts the page with his own token (`JIRA_TOKEN_IVAN`); the command then asks Confluence who can open it and fails unless it is exactly the readers. The text is `incident_report` in `demo_spaces.json`. It must never name PAY-102 or its title: an answer that repeats a ticket the asker cannot see is blocked. `--remove` purges the page rather than trashing it, because Confluence keeps a trashed page's title taken. The console's **Step 6** button and **Reset rehearsal** run these commands.
+
 Both commands are safe to rerun: unchanged pages and comment threads are left alone.
 
 This site uses **space roles** (`/wiki/api/v2/space-role-mode` returns `ROLES`), so the older per-permission API is refused; `demo_spaces.py` assigns roles through `/wiki/api/v2/spaces/{id}/role-assignments` instead.

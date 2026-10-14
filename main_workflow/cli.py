@@ -162,7 +162,7 @@ def main():
     chat.add_argument("--as", dest="user", required=True)
     chat.set_defaults(func=cmd_chat)
 
-    reset = sub.add_parser("reset", help="reset Jira and Slack (and every chat, if the web server is running)")
+    reset = sub.add_parser("reset", help="reset Jira, Slack, Confluence, and Drive (and every chat, if the web server is running)")
     reset.add_argument("--port", type=int, default=8090, help="the web server's port")
     reset.set_defaults(func=cmd_reset)
 

@@ -1,0 +1,14 @@
+[project]
+name = "internal-brain"
+version = "0.1.0"
+description = "Permission-aware chat over Confluence, Jira, Slack, and Google Drive, with a hash-chained audit trail"
+requires-python = ">=3.10"
+dependencies = [
+    "cryptography>=50.0.2",
+    "slack-bolt>=1.30.0",
+    "slack-sdk>=3.45.0",
+]
+
+[tool.uv]
+# scripts run from the repository root (python -m main_workflow.web, python gdrive/...); nothing to build or install
+package = false

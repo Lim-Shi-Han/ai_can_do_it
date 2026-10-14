@@ -3,7 +3,7 @@
 | Phase | Work | Status |
 |---|---|---|
 | A | `sources/base.py`, `audit.py`, `gate.py`, `pipeline.py`, plus the Confluence source: the full loop working on Confluence only | ✅ Done |
-| B | Jira, Slack, and Drive sources against the interface | 🟡 In progress: Drive and Slack done; Jira running on a stand-in (`stand_in_jira_slack/`) |
+| B | Jira, Slack, and Drive sources against the interface | 🟡 In progress: Jira, Drive, and Slack sources run on the real platforms; the Slack workspace is still to set up (Slack falls back to the stand-in in `stand_in_jira_slack/` until `SLACK_BOT_TOKEN` is set) |
 | C | `index.py`, `sync.py`, `memory.py`: scenarios 2 and 4 | ✅ Done (live freshness rehearsal still to run) |
 | D | Run the demo script end to end, then the architecture and trust-boundary diagrams | 🟡 In progress: demo flow runs in the web UI; rehearsal, diagrams, and worked examples to do |
 | E (optional) | A small web UI with a user switcher, replacing the command-line chat | ✅ Done (`python3 -m main_workflow.web`) |
@@ -11,20 +11,21 @@
 # To-do list
 
 **Sources (Phase B)**
-- [ ] Jira source `sources/jira.py`: project `PAY`, issues PAY-101 to PAY-104 labelled `INC-PAY-001`, PAY-104 at the Security issue-security level
+- [x] Jira source `sources/jira.py`: projects `PAY`, `ACC`, `FIN`, with the Security issue-security level in `PAY`
+- [x] Drive source `sources/gdrive.py` over the `Company A` folders: Word, CSV, Google Docs, and Google Sheets
 - [x] Slack source `sources/slack.py` and the `/brain` bot `slack_bot.py` (see Slack below)
 - [ ] Slack workspace: create the Brain app (see Slack below), then follow `slack_demo/README.md` to log in Zhao and ShiHan and run `slack_cli.py reset`, which creates the channels, sets members, invites the bot, and posts the threads
 - [x] Stand-in Jira and Slack sources in `stand_in_jira_slack/` for rehearsals
-- [ ] Swap the Jira stand-in for the real source in `sources/__init__.py` (Slack switches itself once `SLACK_BOT_TOKEN` is set)
-- [ ] Confirm the Jira keys, Slack channel, and Drive file title used in `confluence/seed_pages.json` with the source owners
 
 **Accounts and permissions**
 - [x] Jira and Confluence on paid plans, so pages and issues can be restricted (enforcement checked with each person's own token, 2026-10-14)
 - [x] Restrict Jira (`PAY`, `ACC`, `FIN`) and Confluence (`HANDBOOK`, `PAYOPS`, `FINOPS`, `SECOPS`) to match the Identities table below
-- [ ] Step 6: create Ivan's incident report live in `PAYOPS`, restricted to ShiHan, Zhao, and Ivan (needs the final text)
+- [x] Step 6: Ivan's incident report, published live in `PAYOPS` and restricted to ShiHan, Zhao, and Ivan (`confluence/demo_spaces.py incident-report`, or the console)
 - [x] Create demo accounts and fill in `identities.json`: Atlassian account IDs and Google emails for all six users
 - [ ] Slack user IDs in `identities.json` once real Slack exists
-- [ ] `python3 gdrive/gdrive_cli.py share ShiHan Ivan Sheldon`; keep Terrance unshared (Zhao's Google account owns the folder)
+- [x] Drive folders, sharing, and files by their owners (`gdrive/demo_drive.py seed`); matches the Drive table below (checked 2026-10-14). Terrance is shared only from step 3 to step 8
+- [ ] A Google account that can sign in for Sheldon; until then Zhao uploads his Drive files (`gdrive/SETUP.md`)
+- [x] Console Drive card: **Share** with a role (Terrance needs Editor to upload in step 3) and the three demo upload buttons
 - [x] Re-map ShiHan from the seeding account to a separate Atlassian account
 
 **Demo (Phase D)**
@@ -46,7 +47,16 @@
 
 **Corporate Chat with Dynamic Access**: permission-aware question answering over Confluence, Jira, Slack, and Google Drive, with a hash-chained audit trail.
 
-Run everything from the repository root. Needs the same `.env` as `confluence/`, the local vLLM server, and `main_workflow/identities.json`. That file is not in Git: get it from a teammate, or start from the placeholder copy:
+Run everything from the repository root, in the project's Python environment. Install it once with [uv](https://docs.astral.sh/uv/):
+
+```bash
+uv sync                          # creates .venv from pyproject.toml and uv.lock
+.venv\Scripts\activate           # Windows; on macOS or Linux: source .venv/bin/activate
+```
+
+With the environment active, every `python ...` command in these docs uses it. Without activating, prefix commands with `uv run`, for example `uv run python -m main_workflow.web`. To add a package, run `uv add <package>`; it updates `pyproject.toml` and `uv.lock`, which are both committed.
+
+The app also needs the same `.env` as `confluence/`, the local vLLM server, and `main_workflow/identities.json`. That file is not in Git: get it from a teammate, or start from the placeholder copy:
 
 ```bash
 cp main_workflow/identities.example.json main_workflow/identities.json   # then fill in real Google emails
@@ -80,6 +90,8 @@ When Slack is configured, the server also runs the Slack bot (see Slack below), 
 
 ### Demo flow
 
+The full demo follows the 11-step flow in `docs/DEMO_PLAN.md`. The checks below rehearse single scenarios quickly.
+
 Before each run:
 
 1. Stop the server, clear the audit trail, and start it again (this also resets the stand-in data):
@@ -93,7 +105,7 @@ Before each run:
 
 Then:
 
-1. **Unified query.** Chat as ShiHan: ask the main INC-PAY-001 question. Citations come from Confluence, Jira, and Slack (Drive too, once the folder is shared with ShiHan).
+1. **Unified query.** Chat as ShiHan: ask the main INC-PAY-001 question. Citations come from Confluence, Jira, and Slack, and from Drive once Terrance's timeout log is uploaded (`python3 gdrive/demo_drive.py upload 3`, after sharing the folder with him).
 2. **Freshness.** Console: **Publish runbook update**, then **Sync now**. Ask again in the same chat: the answer cites the new runbook version and the failover step, and the earlier answer is removed because its runbook version is out of date.
 3. **Revocation.** Console: check the Slack card shows ShiHan as a member of `#payment-incident-001`, then click **Remove**. Ask a follow-up in the same chat: the "earlier answers were removed" banner appears, the earlier Slack answer is blanked, and no Slack citations appear. The console shows the DENY decisions. To give access back mid-demo, use **Add**, not Reset rehearsal (which clears every chat).
 4. **Restricted user.** Chat as Terrance, then as Ivan, with the same security question. Terrance gets nothing restricted and no hint that anything was hidden; Ivan sees PAY-104.
@@ -123,10 +135,11 @@ python3 -m main_workflow.cli audit verify
 |---|---|
 | `sources/base.py` | The interface every platform implements: `search`, `can_access`, `fetch`, `changes_since`. |
 | `sources/confluence.py` | Confluence source for the spaces in `CONFLUENCE_SPACE_KEYS` (`HANDBOOK`, `PAYOPS`, `FINOPS`, `SECOPS`). Reuses the client in `confluence/confluence_cli.py` and adds search and a live per-user permission check; each page is labelled with its own space. |
+| `sources/jira.py` | Jira source for the projects in `JIRA_PROJECT_KEY` (`PAY`, `ACC`, `FIN`). Checks project access, and the issue-security level when a ticket has one. |
 | `sources/slack.py` | Slack source. One thread is one document; access is live channel membership. Reads only channels the bot is in, never DMs. Falls back to the stand-in until `SLACK_BOT_TOKEN` is set. |
 | `slack_bot.py` | The `/brain` command and Slack's message and membership events, over Socket Mode. Started by `web.py`. |
-| `../stand_in_jira_slack/` | Stand-in Jira and Slack sources (`jira-fixture`, `slack-fixture`) until the real ones are ready. See its README. |
-| `sources/gdrive.py` | Google Drive source. Reuses the client in `gdrive/gdrive_cli.py` with the read-only scope. Skipped with a warning until Drive is configured in `.env`. |
+| `../stand_in_jira_slack/` | Stand-in Slack source (`slack-fixture`), used until `SLACK_BOT_TOKEN` is set; its Jira stand-in is no longer loaded. See its README. |
+| `sources/gdrive.py` | Google Drive source. Reads every file shared with the service account (the `Company A` folders) through the client in `gdrive/gdrive_cli.py` with the read-only scope; Word, CSV, Google Docs, and Google Sheets. Skipped with a warning until Drive is configured in `.env` (see `gdrive/SETUP.md`). |
 | `gate.py` | Checks each candidate live. A failed check or fetch counts as a denial. Only allowed documents are fetched, and the index is refreshed when it held an older version. |
 | `index.py` | SQLite FTS5 index (Porter stemming) used only to pick candidates. Its text never reaches the model. |
 | `sync.py` | Polls each source's `changes_since` every 60 s and updates the index. Each sync with changes is logged as a `system` audit entry. |
@@ -158,7 +171,7 @@ When nothing is allowed, the reply is the same fixed sentence as when nothing ma
 
 ## Slack
 
-Install once with `pip install slack_bolt`. Until `SLACK_BOT_TOKEN` is set, everything runs on the Slack stand-in.
+`slack-bolt` is installed by `uv sync` (see the top of this file). Until `SLACK_BOT_TOKEN` is set, everything runs on the Slack stand-in.
 
 **Setup.** At <https://api.slack.com/apps>, choose *Create New App → From a manifest*, pick the workspace, and paste:
 
@@ -220,7 +233,8 @@ The model never calls Jira. Each step is audited: `action_proposed`, `action_exe
 
 - **Jira:** projects holding tickets created during a demo are rebuilt, so the next tickets get PAY-100, ACC-41, and FIN-21 again (Jira never reuses a key; this takes minutes per project). Then roles, statuses, and comments go back to the seed.
 - **Slack:** the demo channels keep their members and the bot, and every message is deleted. The demo posts its steps with `slack_demo/slack_cli.py play`.
-- **Confluence and Drive**, when configured: the original runbook, and Drive re-shared with ShiHan.
+- **Confluence**, when configured: the original runbook, published again as a new version, and step 6's incident report deleted for good, so the next run can publish it under the same title.
+- **Drive**, when configured: Terrance is removed from the processor folder, and the files uploaded during the demo go to their owners' trash, using each owner's Google sign-in (`gdrive/demo_drive.py reset --yes`; see `gdrive/SETUP.md`).
 
 With the web server running, the reset goes through it: it also re-syncs the search index and clears every web and `/brain` chat. With no server running, it also deletes the audit trail and search index, so stop the server first for a clean audit trail. The console never clears the audit trail.
 
@@ -247,14 +261,16 @@ rm -f main_workflow/audit.db main_workflow/audit.head
 
 ## Identities
 
-| User | Role | Atlassian account | Drive | Jira / Slack (stand-ins) | Auditor |
+| User | Role | Atlassian account | Google account | Slack (stand-in) | Auditor |
 |---|---|---|---|---|---|
-| ShiHan | payments backend engineer (on-call) | Lim Shi Han | reader (to share) | PAY-101 to PAY-103; both channels | no |
-| Zhao | CTO | Zhao Heng: site admin, also the system's API account | folder owner | PAY-101 to PAY-104; both channels | no |
-| Ivan | security engineer | Ivan | reader (to share) | PAY-101 to PAY-104; both channels | no |
+| ShiHan | payments backend engineer (on-call) | Lim Shi Han | yes | both channels | no |
+| Zhao | CTO | Zhao Heng: site admin, also the system's API account | yes, owns the Drive folders | both channels | no |
+| Ivan | security engineer | Ivan | yes | both channels | no |
 | Elson | compliance officer | Elson Chan Chong Jun | none | none | yes |
-| Sheldon | finance analyst (payments reconciliation) | Sheldon | reader (to share) | `#payments` only | no |
-| Terrance | external contractor (third-party vendor) | Terrance | never share | `#payments` only | no |
+| Sheldon | finance analyst (payments reconciliation) | Sheldon | yes, but cannot sign in yet | `#payments` only | no |
+| Terrance | external contractor (third-party vendor) | Terrance | yes | `#payments` only | no |
+
+Jira project roles are listed in `docs/DEMO_PLAN.md`.
 
 Confluence spaces (space roles, set by `confluence/demo_spaces.py`):
 
@@ -267,7 +283,17 @@ Confluence spaces (space roles, set by `confluence/demo_spaces.py`):
 
 Ivan's incident report (created live in step 6) is restricted further to ShiHan, Zhao, and Ivan. Elson can read Jira `PAY` and `ACC` and comment in Confluence but change nothing, and is the only auditor.
 
-Users without an account on a platform are denied everything there by default. Stand-in access is set in `stand_in_jira_slack/seed.json`, not here. Every user has an Atlassian account and a Google email; Slack user IDs are still empty. On the real platforms, access comes from Jira roles, Confluence space roles and page restrictions, and Drive sharing. Jira and Confluence match these tables (checked 2026-10-14); Drive sharing does not yet (see below).
+Drive folders (sharing, set by `gdrive/demo_drive.py seed`; Zhao owns the folders, and each person owns the files they wrote):
+
+| Folder | ShiHan | Zhao | Ivan | Elson | Sheldon | Terrance |
+|---|---|---|---|---|---|---|
+| `Company A/Payments Engineering` | edit | owner | edit | · | · | · |
+| `Company A/Finance` | one file (comment) | owner | · | · | edit | · |
+| `Company A/Security` | · | owner | edit | · | · | · |
+| `Company A/Vendors/PayProcessor` | view | owner | comment | · | edit | · |
+| `…/PayProcessor/INC-PAY-001 shared with PayProcessor` | view | owner | comment | · | edit | edit, steps 3 to 8 only |
+
+Users without an account on a platform are denied everything there by default. Stand-in access is set in `stand_in_jira_slack/seed.json`, not here. Every user except Elson has a Google account; Slack user IDs are still empty. On the real platforms, access comes from Jira roles, Confluence space roles and page restrictions, and Drive sharing. Jira, Confluence, and Drive match these tables (checked 2026-10-14).
 
 # Current status: stand-ins and gaps
 
@@ -278,7 +304,7 @@ Users without an account on a platform are denied everything there by default. S
 | Slack | Stand-in reading a local JSON file (`stand_in_jira_slack/`) | Build `sources/slack.py` with a bot token and real channels |
 | Sign-in | A dropdown stands in for single sign-on | Fine for a hackathon; present it as a trade-off |
 | Zhao | Zhao's account is also the system's API account (site admin, seeded PAYOPS) | Fine for a hackathon because Zhao, the CTO, may see everything; production would use a dedicated non-human service account |
-| Drive users | Zhao's Google account owns the folder; ShiHan, Ivan, and Sheldon are not shared yet | `python3 gdrive/gdrive_cli.py share ShiHan Ivan Sheldon`; never share with Terrance |
+| Sheldon's Drive uploads | Zhao uploads Sheldon's files, because Sheldon's Google account cannot sign in yet | A Google account for Sheldon, then `gdrive/demo_drive.py seed --fix-owners` (see `gdrive/SETUP.md`) |
 | Slack user IDs | Empty; the stand-ins match users by name | Needed once real Slack exists |
 | Platform console | Simulates platform admins | Correct by design: it represents the platforms, not the chat |
 | Stand-in citation links | `fixture://…`, not clickable | Real sources return real URLs |
@@ -286,10 +312,9 @@ Users without an account on a platform are denied everything there by default. S
 ## Missing: affects the demo
 
 1. **Confluence access in the console.** The console has no Confluence access controls; the demo revokes on Drive, so none are needed. Change space roles with `confluence/demo_spaces.py` or in Confluence.
-2. **Ivan's incident report (step 6).** Created live in `PAYOPS` and restricted to ShiHan, Zhao, and Ivan; the command that creates it needs the final text. Restrictions are enforced (checked 2026-10-14: a restricted test page returned "not found" to ShiHan and Sheldon with their own tokens).
-3. **Real Drive revocation.** ShiHan now has a Google email; share the folder with ShiHan first.
-4. **"Yesterday" in the demo question.** The seed data is dated 2026-09-28. Ask about "INC-PAY-001" instead, or re-date the seed data.
-5. **No automated scenario check in the repo.** The scenarios are checked by hand with the demo flow above.
+2. **Ivan's incident report (step 6).** Published live in `PAYOPS` and restricted to ShiHan, Zhao, and Ivan. The wording in `confluence/demo_spaces.json` is a draft to review; it must never name PAY-102 or its title.
+3. **"Yesterday" in the demo question.** The seed data is dated 2026-09-28. Ask about "INC-PAY-001" instead, or re-date the seed data.
+4. **No automated scenario check in the repo.** The scenarios are checked by hand with the demo flow above.
 
 ## Missing: deliverables (Phase D)
 

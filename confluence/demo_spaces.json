@@ -309,5 +309,17 @@
         }
       ]
     }
-  ]
+  ],
+  "incident_report": {
+    "note": "Created live in step 6 by `demo_spaces.py incident-report`, as Ivan, and restricted to the readers. It must never name the restricted security assessment ticket or its title, or answers to people who cannot see that ticket are blocked. `incident-report --remove` deletes it for the next rehearsal.",
+    "space": "PAYOPS",
+    "title": "INC-PAY-001 incident report: payment authorization timeouts",
+    "author": "Ivan",
+    "readers": [
+      "ShiHan",
+      "Zhao",
+      "Ivan"
+    ],
+    "body": "Written by Ivan (approver) on {date}, after recovery. Visible to the responders and leadership only, as the incident response policy requires. Status: resolved; Finance is confirming the customer impact with the payment processor.\n## Summary\nBetween 14:10 and 15:02 SGT, card payment authorizations sent to Company A by the payment processor timed out. A payment-service configuration rollout at 14:07 lowered the database connection limit, the connection pool saturated, and requests waited longer than the processor's 2,000 ms limit. The processor reported the timeouts before our alerts fired. The rollback was approved on the incident ticket, started at 14:37, and payments recovered at 15:02.\n## Timeline (SGT)\n- **14:07** Configuration rollout to payment-service lowers the database connection limit\n- **14:10** Authorization timeouts begin; the processor reports them in the shared channel\n- **14:12** Zhao opens INC-PAY-001 (PAY-100) and assigns ShiHan, the on-call engineer\n- **14:26** The processor shares its timeout log through the temporary case folder access (ACC-41)\n- **14:30** ShiHan links the timeouts to the 14:07 rollout, following the recovery runbook\n- **14:35** Ivan approves the rollback (PAY-101) on PAY-100 and in the incident channel\n- **14:37** Rollouts paused; rollback started\n- **14:48** Connection pool use back below 85%\n- **15:02** Payments recovered; PAY-101 done and PAY-100 resolved\n## Root cause\nThe 14:07 rollout set the payment-service connection limit below what peak traffic needs. The pool reached 100% at 14:16 and stayed there until the rollback took effect, so authorization requests queued past the processor's limit and were declined with code 91. The fault was in our configuration; nothing outside Company A was involved.\n## Impact\n- Provisional: the processor's log showed 387 timeouts by 14:25, still rising\n- Final figures (timed-out attempts, retries, and any double charges) come from Finance's reconciliation with the processor\n- No cardholder data was exposed. A separate security assessment is tracked by the security team\n## What worked\n- The processor's report and log gave the start time within minutes\n- The runbook matched the symptoms, and the rollback was approved before it ran, as the policy requires\n## Follow-up\n- Cap connection-limit changes and check them during rollout; tracked in Jira PAY, owner ShiHan\n- Alert on connection pool use above 85% before a partner notices\n- Remove the processor's temporary folder access when the case closes (ACC-41)"
+  }
 }

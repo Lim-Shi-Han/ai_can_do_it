@@ -16,7 +16,7 @@ function fill(id, values, selected) {
 
 async function loadOptions() {
   const o = await api("GET", "/api/console/options");
-  const keep = options ? { su: $("slackUser").value, sc: $("slackChannel").value, ju: $("jiraUser").value, jt: $("jiraTarget").value, ji: $("jiraIssue").value } : null;
+  const keep = options ? { su: $("slackUser").value, sc: $("slackChannel").value, ju: $("jiraUser").value, jt: $("jiraTarget").value, ji: $("jiraIssue").value, du: $("driveUser").value } : null;
   options = o;
   fill("slackUser", o.users, keep ? keep.su : "ShiHan");
   fill("slackChannel", o.channels, keep ? keep.sc : "payment-incident-001");
@@ -25,7 +25,7 @@ async function loadOptions() {
   fill("jiraIssue", o.issues, keep ? keep.ji : o.issues[0]);
   fill("jiraStatus", o.statuses, "Done");
   $("jiraAction").hidden = !o.jira;
-  fill("driveUser", o.users, "ShiHan");
+  fill("driveUser", o.users, keep ? keep.du : "Terrance");
   fill("auditUser", o.users, "Elson");
   $("auditors").textContent = o.auditors.join(", ") || "none";
   showMembers();
@@ -92,7 +92,8 @@ async function act(button) {
   if (action === "slack_access") Object.assign(body, { user: $("slackUser").value, channel: $("slackChannel").value });
   if (action === "jira_access") Object.assign(body, { user: $("jiraUser").value, target: $("jiraTarget").value });
   if (action === "jira_status") Object.assign(body, { key: $("jiraIssue").value, status: $("jiraStatus").value });
-  if (action === "drive_access") Object.assign(body, { user: $("driveUser").value });
+  if (action === "drive_access") Object.assign(body, { user: $("driveUser").value, role: $("driveRole").value });
+  if (action === "drive_upload") Object.assign(body, { step: Number(button.dataset.step), owner: button.dataset.owner });
   if (action === "audit_role") Object.assign(body, { user: $("auditUser").value });
   if (action === "reset" && !confirm("Reset the rehearsal? This restores the stand-in data and the original runbook, and clears every chat.")) return;
 

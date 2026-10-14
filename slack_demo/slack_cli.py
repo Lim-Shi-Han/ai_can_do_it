@@ -61,8 +61,9 @@ STEPS = {
     3: [
         ("vendor-payprocessor", [
             ("Zhao", "Could you share your timeout logs? Sheldon is setting up temporary access to our case folder."),
-            ("Sheldon", "Opened ACC-41 for temporary vendor access and Zhao approved it. I've shared the case folder in Drive with you."),
-            ("Terrance", "Uploaded our processor timeout log: failed authorizations per minute from 14:10."),
+            ("Sheldon", "Opened ACC-41 for temporary vendor access; Ivan and Zhao signed off."),
+            ("Zhao", "I've shared the case folder in Drive with you as editor, so you can upload there."),
+            ("Terrance", "Uploaded our processor timeout log: requests and timeouts per minute from 14:00."),
         ]),
     ],
     5: [
@@ -83,12 +84,13 @@ STEPS = {
         ("vendor-payprocessor", [
             ("Terrance", "Sheldon, I can only reconcile our side of the failed payments. "
                          "Could you share Company A's payment records for the same window?"),
-            ("Sheldon", "Uploaded our internal payment ledger extract to the case folder. Tracking the reconciliation in FIN-21."),
+            ("Sheldon", "Uploaded a copy of our payment records for the same window to the case folder, with references "
+                        "and amounts only. Tracking the reconciliation in FIN-21."),
         ]),
     ],
     8: [
         ("payments", [
-            ("Zhao", "PAY-100 and FIN-21 are closed, and the processor can still read our internal ledger extract. "
+            ("Zhao", "PAY-100 and FIN-21 are closed, and the processor can still open our payment records copy. "
                      "They don't need our folder any more. Sheldon, please remove their access."),
             ("Sheldon", "Done: unshared the folder from the processor and closed ACC-41 (access revoked, case closed)."),
         ]),

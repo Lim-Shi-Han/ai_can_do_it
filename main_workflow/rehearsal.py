@@ -7,13 +7,13 @@ import subprocess
 import sys
 from pathlib import Path
 
-from . import pipeline
-
 REPO = Path(__file__).resolve().parents[1]
 FIXTURE_CLI = REPO / "stand_in_jira_slack" / "fixture_cli.py"
 JIRA_CLI = REPO / "jira" / "jira_cli.py"
 GDRIVE_CLI = REPO / "gdrive" / "gdrive_cli.py"
+DEMO_DRIVE = REPO / "gdrive" / "demo_drive.py"
 CONFLUENCE_CLI = REPO / "confluence" / "confluence_cli.py"
+DEMO_SPACES = REPO / "confluence" / "demo_spaces.py"
 SLACK_CLI = REPO / "slack_demo" / "slack_cli.py"
 REBUILD_TIMEOUT = 1800   # recreating a Jira project and reserving its keys takes minutes
 
@@ -27,12 +27,13 @@ def run_cli(args, timeout=120):
 
 def jira_projects_with_demo_tickets():
     """Projects holding tickets beyond the seed. Jira never reuses a key, so only a rebuild gives them back."""
-    from jira.jira_cli import Jira, load_local_env, load_seed
+    from jira.jira_cli import Jira, load_local_env, load_seed, until_permitted
     load_local_env()
     seed = load_seed()
     projects = [p["key"] for p in seed["projects"]]
     seeded = {issue["key"] for issue in seed["issues"]}
-    found = {issue["key"] for issue in Jira().search(f"project in ({', '.join(projects)})")}
+    api = Jira()
+    found = {issue["key"] for issue in until_permitted(api, projects, lambda: api.search(f"project in ({', '.join(projects)})"))}
     return sorted({key.rsplit("-", 1)[0] for key in found - seeded})
 
 
@@ -46,10 +47,12 @@ def reset_platforms(sources):
         steps.append(([JIRA_CLI, "reset"], 300))
     if "confluence" in sources:
         steps.append(([CONFLUENCE_CLI, "restore-runbook"], 120))
+        steps.append(([DEMO_SPACES, "incident-report", "--remove"], 120))   # step 6's report, gone for good
     if "slack" in sources:
         steps.append(([SLACK_CLI, "reset"], 300))
-    if "gdrive" in sources and pipeline.load_identities().get("ShiHan", {}).get("google_email"):
-        steps.append(([GDRIVE_CLI, "share", "ShiHan"], 120))
+    if "gdrive" in sources:
+        # Terrance off the processor folder, and the demo's uploads trashed by their owners
+        steps.append(([DEMO_DRIVE, "reset", "--yes"], 300))
 
     ok, summary = True, []
     for args, timeout in steps:

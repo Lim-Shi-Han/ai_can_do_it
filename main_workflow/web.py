@@ -30,6 +30,8 @@ ROOT = Path(__file__).resolve().parent
 REPO = ROOT.parent
 STATIC = ROOT / "static"
 FIXTURE_CLI = REPO / "stand_in_jira_slack" / "fixture_cli.py"
+JIRA_CLI = REPO / "jira" / "jira_cli.py"
+JIRA_STATUS_ORDER = ["To Do", "In Progress", "Done"]
 GDRIVE_CLI = REPO / "gdrive" / "gdrive_cli.py"
 CONFLUENCE_CLI = REPO / "confluence" / "confluence_cli.py"
 CONTENT_TYPES = {".html": "text/html; charset=utf-8", ".css": "text/css", ".js": "text/javascript"}
@@ -74,7 +76,7 @@ def set_audit_role(name, grant):
 def accounts(user):
     out = {}
     for name in SOURCES:
-        if name == "confluence":
+        if name in ("confluence", "jira"):
             out[name] = bool(user.get("atlassian_account_id"))
         elif name == "gdrive":
             out[name] = bool(user.get("google_email"))
@@ -243,18 +245,46 @@ def api_console_grid(handler, query, body):
     return {"users": [u["name"] for u in people], "rows": rows, "checked_at": now_utc()}
 
 
+def jira_console_options():
+    """Targets, members, tickets, and statuses from real Jira, read live like everything else in the console."""
+    from jira.jira_cli import load_seed
+    jira = SOURCES["jira"]
+    api, targets = jira.api, load_seed()["targets"]
+    names = {u.get("atlassian_account_id"): n for n, u in identities().items()}
+    roles = api.global_roles()
+
+    def members(target):
+        # a project target lists everyone who can open the project, labelled by role; Add/Remove changes Member only
+        key, role = targets[target]
+        shown = ("Member", "Viewer", "Administrators") if role == "Member" else (role,)
+        return target, [f"{n} ({r})" if role == "Member" else n for r in shown
+                        for n in sorted(names.get(a, "other account") for a in api.role_users(key, roles[r]))]
+
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        jira_members = dict(pool.map(members, targets))
+    scope = f"project in ({', '.join(jira.projects)})"
+    issues = [i["key"] for i in api.search(f"{scope} ORDER BY created DESC", "summary", limit=50)]
+    found = {s["name"] for t in api.request("GET", f"/rest/api/3/project/{jira.projects[0]}/statuses")
+             for s in t.get("statuses", [])}
+    statuses = [s for s in JIRA_STATUS_ORDER if s in found] + sorted(found - set(JIRA_STATUS_ORDER))
+    return {"jira": True, "jira_targets": list(targets), "jira_members": jira_members,
+            "issues": issues, "statuses": statuses}
+
+
 def api_console_options(handler, query, body):
     from stand_in_jira_slack.sources import load_state
     state = load_state()
+    jira = {"jira": False, "jira_targets": [], "jira_members": {}, "issues": [], "statuses": []}
+    if "jira" in SOURCES:
+        try:
+            jira = jira_console_options()
+        except Exception as exc:
+            log_activity("jira", f"Jira options unavailable: {str(exc)[:120]}", ok=False)
     return {
         "users": list(identities()),
         "channels": [c["name"] for c in state["slack"]["channels"].values()],
         "channel_members": {c["name"]: c["members"] for c in state["slack"]["channels"].values()},
-        "jira_targets": list(state["jira"]["projects"]) + list(state["jira"]["security_levels"]),
-        "jira_members": {**{k: v["browse"] for k, v in state["jira"]["projects"].items()},
-                         **state["jira"]["security_levels"]},
-        "issues": [i["key"] for i in state["jira"]["issues"]],
-        "statuses": ["To Do", "In Progress", "Blocked", "Done"],
+        **jira,
         "drive": "gdrive" in SOURCES,
         "auditors": [u["name"] for u in identities().values() if u.get("can_audit")],
     }
@@ -272,9 +302,9 @@ def api_console_action(handler, query, body):
         ok, text = run_cli([FIXTURE_CLI, verb, body["user"], "slack", body["channel"]])
     elif action == "jira_access":
         verb = "grant" if body.get("grant") else "revoke"
-        ok, text = run_cli([FIXTURE_CLI, verb, body["user"], "jira", body["target"]])
+        ok, text = run_cli([JIRA_CLI, verb, body["user"], body["target"]])
     elif action == "jira_status":
-        ok, text = run_cli([FIXTURE_CLI, "set-status", body["key"], body["status"]])
+        ok, text = run_cli([JIRA_CLI, "set-status", body["key"], body["status"]])
     elif action == "drive_access":
         ok, text = run_cli([GDRIVE_CLI, "share" if body.get("grant") else "unshare", body["user"]])
     elif action == "audit_role":
@@ -289,6 +319,10 @@ def api_console_action(handler, query, body):
         ok, text = all(not r.get("error") for r in results), f"Sync finished: {changed} change(s)"
     elif action == "reset":
         ok, text = run_cli([FIXTURE_CLI, "reset"])
+        if "jira" in SOURCES:
+            # roles, statuses, and comments back to the seed; tickets created during a demo need jira_cli.py rebuild
+            jira_ok, jira_text = run_cli([JIRA_CLI, "reset"])
+            ok, text = ok and jira_ok, f"{text}; {jira_text}"
         runbook_ok, runbook_text = run_cli([CONFLUENCE_CLI, "restore-runbook"])
         ok, text = ok and runbook_ok, f"{text}; {runbook_text}"
         engineer = identities().get("ShiHan", {})

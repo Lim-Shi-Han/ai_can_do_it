@@ -1,4 +1,5 @@
 import re
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 
 TAG_RE = re.compile(r"\[S\d+\]")
@@ -40,14 +41,16 @@ class Memory:
             return False, None, f"check_failed:{type(exc).__name__}"
 
     def revalidate(self, user, sources):
-        live, kept, dropped = {}, [], []
+        keys = list(dict.fromkeys((s, d) for turn in self.turns for s, d, _ in turn.cited))
+        live = {}
+        if keys:
+            with ThreadPoolExecutor(max_workers=8) as pool:
+                live = dict(zip(keys, pool.map(lambda k: self._status(user, sources, *k), keys)))
+        kept, dropped = [], []
         for turn in self.turns:
             problems = []
             for source_name, doc_id, version in turn.cited:
-                key = (source_name, doc_id)
-                if key not in live:
-                    live[key] = self._status(user, sources, source_name, doc_id)
-                allowed, live_version, reason = live[key]
+                allowed, live_version, reason = live[(source_name, doc_id)]
                 if not allowed:
                     problems.append({"source": source_name, "doc_id": doc_id, "reason": reason})
                 elif live_version != str(version):

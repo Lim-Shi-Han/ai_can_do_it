@@ -2,10 +2,10 @@
   "note": "Fictional hackathon data. Stand-in for Jira and Slack until the real sources are ready.",
   "jira": {
     "projects": {
-      "PAY": {"name": "Payments", "browse": ["ShiHan", "Ivan"]}
+      "PAY": {"name": "Payments", "browse": ["ShiHan", "Ivan", "Zhao", "Elson"]}
     },
     "security_levels": {
-      "Security": ["Ivan"]
+      "Security": ["Ivan", "Zhao"]
     },
     "issues": [
       {
@@ -76,8 +76,8 @@
   },
   "slack": {
     "channels": {
-      "C01INCPAY": {"name": "payment-incident-001", "private": true, "members": ["ShiHan", "Ivan"]},
-      "C02PAYMNT": {"name": "payments", "private": false, "members": ["ShiHan", "Zhao", "Ivan"]}
+      "C01INCPAY": {"name": "payment-incident-001", "private": true, "members": ["ShiHan", "Ivan", "Zhao"]},
+      "C02PAYMNT": {"name": "payments", "private": false, "members": ["ShiHan", "Zhao", "Ivan", "Sheldon", "Terrance"]}
     },
     "threads": [
       {

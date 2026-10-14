@@ -48,8 +48,8 @@
           </div>
           <div class="note" id="slackMembers"></div>
         </div>
-        <div class="action">
-          <h4><span class="chip p-jira-fixture"><span class="dot"></span>Jira <span class="tag">stand-in</span></span> project or security level</h4>
+        <div class="action" id="jiraAction">
+          <h4><span class="chip p-jira"><span class="dot"></span>Jira</span> project access (PAY, ACC, FIN) or the PAY Security level</h4>
           <div class="controls">
             <select id="jiraUser"></select><select id="jiraTarget"></select>
             <button class="btn danger" data-act="jira_access" data-grant="0">Remove</button>
@@ -92,7 +92,7 @@
             <button class="btn primary" data-act="sync_now">Sync now</button>
             <button class="btn" data-act="reset">Reset rehearsal</button>
           </div>
-          <div class="note">Reset restores the stand-in data and the original runbook text, re-shares Drive with ShiHan if ShiHan has a Google account, and clears every chat.</div>
+          <div class="note">Reset restores the Slack stand-in, Jira roles and seed tickets, and the original runbook text, re-shares Drive with ShiHan if ShiHan has a Google account, and clears every chat. Tickets created during the demo stay in Jira; remove them with <code>python jira/jira_cli.py rebuild --yes</code>.</div>
         </div>
       </div>
     </section>

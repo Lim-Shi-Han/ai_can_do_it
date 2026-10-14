@@ -1,7 +1,10 @@
 .env
+.history/
 __pycache__/
 *.pyc
 
+main_workflow/identities.json
+main_workflow/identities.tmp
 main_workflow/audit.db
 main_workflow/audit.head
 gdrive/*service_account*.json

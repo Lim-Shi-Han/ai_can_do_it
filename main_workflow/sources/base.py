@@ -7,6 +7,7 @@ STOPWORDS = {
     "did", "does", "any", "all", "from", "with", "that", "this", "there", "their", "about",
     "latest", "show", "tell", "give", "remains", "remaining", "yesterday", "today", "last",
     "week", "current", "currently", "been", "have", "has", "into", "our", "can", "you",
+    "status", "done",  # a ticket field label and value, so they match unrelated tickets
 }
 
 

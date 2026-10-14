@@ -20,7 +20,7 @@ Use an established Google account, and keep company names out of the project nam
    GDRIVE_FOLDER_ID=<FOLDER_ID>
    ```
 
-5. **Users.** Put each user's Google account in `google_email` in `main_workflow/identities.json`. Each user needs a separate real Google account; Gmail plus addresses map to the same account. The folder owner always has access, so give ownership to the user who should see everything (Ivan), not to ShiHan or Zhao.
+5. **Users.** Put each user's Google account in `google_email` in `main_workflow/identities.json` (not in Git; see `identities.example.json`). Each user needs a separate real Google account; Gmail plus addresses map to the same account. The folder owner always has access, so give ownership to the user who should see everything (Zhao, the CTO), never to the contractor (Terrance).
 
 ## Seed and check
 
@@ -33,7 +33,7 @@ python3 gdrive/gdrive_cli.py list            # writes file_manifest.json
 python3 gdrive/gdrive_cli.py read FILE_ID
 ```
 
-Do not share with Zhao; the contractor must not see the report.
+Do not share with Terrance; the contractor must not see the report.
 
 The service account cannot own files (it has no storage quota), which is why the Doc is created by hand and the script only fills it in.
 

@@ -31,16 +31,29 @@ def load_local_env():
             continue
         key, value = line.split("=", 1)
         key = key.strip()
-        if key in {"ATLASSIAN_EMAIL", "ATLASSIAN_API_TOKEN", "ATLASSIAN_CLOUD_ID", "CONFLUENCE_SITE_URL"}:
+        # Jira is on the same Atlassian site, so its credentials and per-person tokens work here too
+        if key in {"ATLASSIAN_EMAIL", "ATLASSIAN_API_TOKEN", "ATLASSIAN_CLOUD_ID", "CONFLUENCE_SITE_URL",
+                   "CONFLUENCE_SPACE_KEYS", "JIRA_EMAIL", "JIRA_API_TOKEN"} or key.startswith("JIRA_TOKEN_"):
             os.environ.setdefault(key, value.strip().strip('"').strip("'"))
 
 
 def load_seed():
     data = json.loads(SEED.read_text(encoding="utf-8"))
     pages = data["pages"]
-    if len(pages) != 8 or len({p["title"] for p in pages}) != 8:
-        raise ValueError("Seed must contain eight uniquely titled pages")
+    if not pages or len({p["title"] for p in pages}) != len(pages):
+        raise ValueError("Seed must contain uniquely titled pages")
     return data
+
+
+def owner_client(owner):
+    """A client that writes as the page owner, from JIRA_TOKEN_<OWNER> and identities.json; None if not set up."""
+    token = os.environ.get(f"JIRA_TOKEN_{owner.upper()}") if owner else None
+    identities = Path(os.environ.get("IDENTITIES_FILE") or ROOT.parent / "main_workflow" / "identities.json")
+    if not token or not identities.exists():
+        return None
+    users = {u["name"]: u for u in json.loads(identities.read_text(encoding="utf-8"))["users"]}
+    email = users.get(owner, {}).get("email")
+    return Confluence(email=email, token=token) if email else None
 
 
 class TextExtractor(HTMLParser):
@@ -70,11 +83,11 @@ def storage_to_text(storage):
 
 
 class Confluence:
-    def __init__(self):
-        email = os.environ.get("ATLASSIAN_EMAIL")
-        token = os.environ.get("ATLASSIAN_API_TOKEN")
+    def __init__(self, email=None, token=None):
+        email = email or os.environ.get("ATLASSIAN_EMAIL") or os.environ.get("JIRA_EMAIL")
+        token = token or os.environ.get("ATLASSIAN_API_TOKEN") or os.environ.get("JIRA_API_TOKEN")
         if not email or not token:
-            raise ValueError("Set ATLASSIAN_EMAIL and ATLASSIAN_API_TOKEN locally")
+            raise ValueError("Set ATLASSIAN_EMAIL and ATLASSIAN_API_TOKEN (or the JIRA_ equivalents) locally")
         self.site = os.environ.get("CONFLUENCE_SITE_URL", DEFAULT_SITE).rstrip("/")
         cloud_id = os.environ.get("ATLASSIAN_CLOUD_ID")
         self.api_base = (
@@ -218,7 +231,9 @@ def main():
         else:
             html = next(p["html"] for p in seed["pages"] if p["slug"] == "runbook")
             message = "Hackathon demo reset: restore original runbook"
-        print(publish_runbook(api, pages, seed["runbook_update"]["title"], html, message))
+        # published as the runbook's owner when their token is set, so the version history shows them
+        publisher = owner_client(seed["runbook_update"].get("author")) or api
+        print(publish_runbook(publisher, pages, seed["runbook_update"]["title"], html, message))
         pages = api.pages(space_id)
 
     if args.command == "read":

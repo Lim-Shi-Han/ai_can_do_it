@@ -6,68 +6,12 @@
   "incident_id": "INC-PAY-001",
   "pages": [
     {
-      "slug": "overview",
-      "id": "327682",
-      "title": "INC-PAY-001 — Payment-service incident overview",
-      "url": "https://hackathontencent.atlassian.net/wiki/spaces/PAYOPS/pages/327682/INC-PAY-001+Payment-service+incident+overview",
-      "version": 1,
-      "updated_at": "2026-09-29T03:49:23.011Z"
-    },
-    {
       "slug": "runbook",
       "id": "65887",
       "title": "Payment-service recovery runbook",
       "url": "https://hackathontencent.atlassian.net/wiki/spaces/PAYOPS/pages/65887/Payment-service+recovery+runbook",
-      "version": 3,
-      "updated_at": "2026-10-12T08:18:10.007Z"
-    },
-    {
-      "slug": "postmortem",
-      "id": "294942",
-      "title": "INC-PAY-001 — Payment-service postmortem",
-      "url": "https://hackathontencent.atlassian.net/wiki/spaces/PAYOPS/pages/294942/INC-PAY-001+Payment-service+postmortem",
-      "version": 1,
-      "updated_at": "2026-09-29T03:49:25.195Z"
-    },
-    {
-      "slug": "timeline",
-      "id": "360449",
-      "title": "INC-PAY-001 — Incident timeline",
-      "url": "https://hackathontencent.atlassian.net/wiki/spaces/PAYOPS/pages/360449/INC-PAY-001+Incident+timeline",
-      "version": 1,
-      "updated_at": "2026-09-29T03:49:26.298Z"
-    },
-    {
-      "slug": "impact",
-      "id": "360469",
-      "title": "INC-PAY-001 — Customer impact",
-      "url": "https://hackathontencent.atlassian.net/wiki/spaces/PAYOPS/pages/360469/INC-PAY-001+Customer+impact",
-      "version": 1,
-      "updated_at": "2026-09-29T03:49:27.480Z"
-    },
-    {
-      "slug": "followups",
-      "id": "65907",
-      "title": "INC-PAY-001 — Follow-up actions",
-      "url": "https://hackathontencent.atlassian.net/wiki/spaces/PAYOPS/pages/65907/INC-PAY-001+Follow-up+actions",
-      "version": 1,
-      "updated_at": "2026-09-29T03:49:28.581Z"
-    },
-    {
-      "slug": "policy",
-      "id": "360489",
-      "title": "Payment incident response policy",
-      "url": "https://hackathontencent.atlassian.net/wiki/spaces/PAYOPS/pages/360489/Payment+incident+response+policy",
-      "version": 1,
-      "updated_at": "2026-09-29T03:49:29.668Z"
-    },
-    {
-      "slug": "security",
-      "id": "393217",
-      "title": "INC-PAY-001 — Security appendix (restrict after upgrade)",
-      "url": "https://hackathontencent.atlassian.net/wiki/spaces/PAYOPS/pages/393217/INC-PAY-001+Security+appendix+restrict+after+upgrade",
-      "version": 1,
-      "updated_at": "2026-09-29T03:49:31.157Z"
+      "version": 8,
+      "updated_at": "2026-10-14T06:45:00.518Z"
     }
   ]
 }

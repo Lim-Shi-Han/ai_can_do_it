@@ -1,0 +1,518 @@
+{
+  "root": "Company A",
+  "owner": "Zhao",
+  "uploaded_by": {
+    "Sheldon": "Zhao"
+  },
+  "uploaded_by_note": "Who uploads for someone without a Google sign-in. Sheldon's account cannot sign in yet, so Zhao uploads his files; Sheldon keeps his own access. Remove the entry once he has run gdrive_cli.py login Sheldon, then run demo_drive.py seed --fix-owners.",
+  "folders": [
+    {
+      "path": "Payments Engineering",
+      "share": {
+        "ShiHan": "editor",
+        "Ivan": "editor"
+      }
+    },
+    {
+      "path": "Finance",
+      "share": {
+        "Sheldon": "editor"
+      }
+    },
+    {
+      "path": "Security",
+      "share": {
+        "Ivan": "editor"
+      }
+    },
+    {
+      "path": "Vendors",
+      "share": {}
+    },
+    {
+      "path": "Vendors/PayProcessor",
+      "share": {
+        "Sheldon": "editor",
+        "Ivan": "commenter",
+        "ShiHan": "viewer"
+      }
+    },
+    {
+      "path": "Vendors/PayProcessor/INC-PAY-001 shared with PayProcessor",
+      "exchange": true,
+      "share": {},
+      "note": "The only folder shared outside Company A. Zhao shares it with Terrance as editor in step 3 and removes him in step 8."
+    }
+  ],
+  "trash": [
+    "INC-PAY-001 payment metrics report"
+  ],
+  "files": [
+    {
+      "owner": "Zhao",
+      "folder": "Payments Engineering",
+      "name": "Engineering priorities H1 2027.docx",
+      "written": "2026-10-09",
+      "lines": [
+        "# Engineering priorities, H1 2027",
+        "Owner: Zhao (CTO). Draft for the leadership offsite on 6 November 2026. Comments welcome until 30 October.",
+        "## Where we are",
+        "- Card spend volume grew 38% year on year, and checkout volume doubled after the PayNow launch",
+        "- Two platform teams (checkout and ledger) and one mobile team: 14 engineers, with 2 open roles",
+        "- Cloud cost per thousand transactions fell from SGD 1.92 to SGD 1.41 after the June database move",
+        "## Priorities",
+        "1. **Card tokenization in-house.** Issue network tokens for corporate cards ourselves instead of renting them from the gateway vendor. Pilot with 20 customers by March",
+        "2. **Ledger database upgrade.** Move the ledger cluster to the new major version and add a second read replica. ShiHan leads; the 2027 sizing estimate in this folder is the starting point",
+        "3. **Multi-region readiness.** Finish the standby-region work from the PAY-93 drill so the card-network gateway can switch regions in under 15 minutes",
+        "4. **Developer experience.** Cut merge-to-production from 3 hours to 45 minutes, with one shared staging stack per team",
+        "5. **Hiring.** Two senior backend engineers for the ledger team and one site reliability engineer",
+        "## Not in H1",
+        "- Stablecoin payouts: revisit in H2 after the licence review",
+        "- Replacing the mobile app framework",
+        "## Budget",
+        "Headcount and cloud lines are in the 2027 technology budget draft in the Finance folder."
+      ]
+    },
+    {
+      "owner": "Zhao",
+      "folder": "Finance",
+      "name": "2027 technology budget draft.csv",
+      "written": "2026-10-07",
+      "lines": [
+        "line_item,category,owner,2026_actual_sgd,2027_draft_sgd,notes",
+        "Cloud hosting (primary region),Infrastructure,Zhao,612000,684000,Ledger read replica and staging stacks",
+        "Cloud hosting (standby region),Infrastructure,Zhao,148000,236000,Full standby for the card-network gateway",
+        "PayProcessor platform and per-authorization fees,Vendors,Sheldon,2210000,2480000,Volume growth at the contract tiers",
+        "Card-network gateway licence,Vendors,Sheldon,240000,252000,5% uplift in the renewal quote",
+        "Observability and logging,Tooling,ShiHan,96000,104000,Log retention cut from 400 to 180 days",
+        "Developer tools and CI,Tooling,ShiHan,58000,71000,Two more build runners",
+        "Single sign-on and MFA,Tooling,Ivan,44000,47000,Per-seat pricing for 160 seats",
+        "Penetration testing (external firm),Assurance,Ivan,60000,60000,Two tests a year",
+        "Engineering headcount (14 to 17),People,Zhao,2380000,2955000,Three hires in H1",
+        "Training and conferences,People,Zhao,32000,40000,",
+        "Contingency,Other,Zhao,0,90000,About 1.5% of the total"
+      ]
+    },
+    {
+      "owner": "Zhao",
+      "folder": "Security",
+      "name": "Access review sign-off Q3 2026.docx",
+      "written": "2026-10-08",
+      "lines": [
+        "# Access review sign-off, Q3 2026",
+        "Signed by Zhao (CTO) on 8 October 2026. Review prepared by Ivan; the account list is in this folder.",
+        "I have read the quarterly third-party and leaver account review and accept its findings.",
+        "## Findings accepted",
+        "- Three leavers kept VPN accounts for up to 9 days after their last day; all removed on 2 October",
+        "- The external tax adviser's Xero login (ACC-38) had no end date; it now ends on 31 December 2026",
+        "- The penetration testers' staging VPN account stayed active 3 days past its end date; disabled on 2 September",
+        "- Production database logins are limited to 4 named engineers, with no shared logins",
+        "## Actions",
+        "| Action | Owner | Due |",
+        "| Remove VPN accounts on the leaver's last day through the HR offboarding hook | Ivan | 15 November 2026 |",
+        "| Set an end date on every third-party account when it is created | Ivan | 31 October 2026 |",
+        "| Next quarterly review | Ivan | 9 January 2027 |"
+      ]
+    },
+    {
+      "owner": "Zhao",
+      "folder": "Vendors/PayProcessor",
+      "name": "PayProcessor contract summary.docx",
+      "written": "2026-06-18",
+      "lines": [
+        "# PayProcessor contract summary",
+        "Owner: Zhao (CTO). Signed 1 March 2025 for three years; renewal notice due by 1 December 2027.",
+        "## Scope",
+        "- Card authorization routing for Company A's corporate cards in Singapore and Malaysia",
+        "- Daily settlement files, and monthly invoices to Finance (Sheldon)",
+        "- Day-to-day contact through the shared Slack channel #vendor-payprocessor",
+        "## Commitments",
+        "| Item | PayProcessor | Company A |",
+        "| Availability | 99.95% a month | 99.9% a month for the issuer endpoint |",
+        "| Issuer answer limit | Waits 2,000 ms, then declines with code 91 | Answers within 2,000 ms |",
+        "| Stand-in approvals | Off unless Company A asks in writing | None |",
+        "| Settlement files | By 06:00 SGT the next business day | None |",
+        "| Data protection | Cardholder names never leave PayProcessor | Shares only references and amounts |",
+        "## Pricing",
+        "- Per authorization: SGD 0.012 up to 20 million a year, SGD 0.009 above",
+        "- Platform fee: SGD 18,000 a month",
+        "- Service credit: 5% of the monthly platform fee for each 0.1% below the availability commitment",
+        "## Contacts",
+        "Relationship manager and operations desk: through Sheldon. Escalation: Zhao."
+      ]
+    },
+    {
+      "owner": "ShiHan",
+      "folder": "Payments Engineering",
+      "name": "Checkout load test results September 2026.csv",
+      "written": "2026-09-30",
+      "lines": [
+        "run_date,scenario,target_rps,achieved_rps,p50_ms,p95_ms,p99_ms,error_rate_pct,notes",
+        "2026-09-08,PayNow QR checkout baseline,300,300,84,190,310,0.02,Reference run on the September release",
+        "2026-09-08,Card checkout baseline,400,400,96,214,388,0.03,",
+        "2026-09-15,Card checkout with 3DS step-up,250,250,140,420,760,0.05,Step-up pages served from the CDN",
+        "2026-09-15,Mixed traffic x2 (peak forecast),800,792,118,365,690,0.21,Queue-depth alert fired at minute 12 (PAY-95)",
+        "2026-09-22,Mixed traffic x2 after queue tuning,800,800,102,301,540,0.04,Batch workers raised from 6 to 10",
+        "2026-09-29,Mixed traffic x3 (year-end peak rehearsal),1200,1146,171,688,1490,0.62,Ledger write latency climbed after 9 minutes; see the database sizing estimate"
+      ]
+    },
+    {
+      "owner": "ShiHan",
+      "folder": "Payments Engineering",
+      "name": "On-call rota Q4 2026.csv",
+      "written": "2026-09-26",
+      "lines": [
+        "week_starting,primary,secondary,database_on_call,notes",
+        "2026-09-28,Arif Rahman,ShiHan,Mei Ling Tan,",
+        "2026-10-05,Mei Ling Tan,Arif Rahman,ShiHan,",
+        "2026-10-12,ShiHan,Mei Ling Tan,Arif Rahman,ShiHan covers Arif's Thursday evening",
+        "2026-10-19,Arif Rahman,ShiHan,Mei Ling Tan,",
+        "2026-10-26,Mei Ling Tan,Arif Rahman,ShiHan,",
+        "2026-11-02,ShiHan,Mei Ling Tan,Arif Rahman,Offsite on 6 November: secondary stays in the office",
+        "2026-11-09,Arif Rahman,ShiHan,Mei Ling Tan,",
+        "2026-11-16,Mei Ling Tan,Arif Rahman,ShiHan,",
+        "2026-11-23,ShiHan,Mei Ling Tan,Arif Rahman,Year-end peak freeze starts 27 November"
+      ]
+    },
+    {
+      "owner": "ShiHan",
+      "folder": "Payments Engineering",
+      "name": "Ledger database sizing estimate 2027.docx",
+      "written": "2026-10-02",
+      "lines": [
+        "# Ledger database sizing estimate, 2027",
+        "Owner: ShiHan. Input for the ledger database upgrade in the H1 2027 priorities. Reviewed with Zhao on 2 October 2026.",
+        "## Today",
+        "- Primary node: 16 vCPU, 64 GB memory, 2 TB storage at 61% used",
+        "- Peak writes 1,850 rows a second and peak reads 9,400 rows a second, both at month-end",
+        "- Connection limit 400 per node; the busiest hour uses 230",
+        "## Growth assumptions",
+        "- Card spend volume up 40% in 2027 and checkout volume up 80% (PayNow)",
+        "- Audit tables grow 25% faster than volume because of the 7-year retention rule",
+        "## Estimate for December 2027",
+        "| Item | Today | December 2027 | Plan |",
+        "| Storage | 1.22 TB | 2.9 TB | Grow the volume to 4 TB in Q2 |",
+        "| Peak writes a second | 1,850 | 3,300 | Partition the entries table by month |",
+        "| Peak reads a second | 9,400 | 17,000 | Second read replica in Q1 |",
+        "| Connections in the busiest hour | 230 | 410 | Keep 400 per node and put a connection proxy in front |",
+        "## Open questions",
+        "- Whether the standby region needs a full-size replica or a smaller warm copy",
+        "- Archive policy for ledger entries older than 7 years"
+      ]
+    },
+    {
+      "owner": "Ivan",
+      "folder": "Security",
+      "name": "Third-party and leaver accounts Q3 2026.csv",
+      "written": "2026-10-01",
+      "lines": [
+        "account,organisation,system,access,granted_through,end_date,last_used,finding,action_taken",
+        "tax-adviser-01,External tax adviser,Xero,Read only,ACC-38,2026-12-31,2026-10-03,No end date when created,End date set on 2 Oct",
+        "analyst-intern-02,Data team (student analyst),BigQuery,Read only,ACC-37,2026-12-19,2026-10-09,None,",
+        "pentest-firm-01,External penetration testers,Staging VPN,Time-boxed,ACC-31,2026-08-30,2026-08-28,Active 3 days past end date,Disabled on 2 Sep",
+        "design-agency-01,Mobile design agency,Figma,Editor,ACC-29,2026-11-30,2026-10-07,None,",
+        "payroll-vendor,Payroll provider,HR system,Read only,Vendor contract,2027-03-31,2026-09-30,One login shared by two people,Replaced with named logins on 5 Oct",
+        "pp-ops-desk,PayProcessor operations,Shared Slack channel only,Member,Vendor contract,Contract end,2026-10-08,None,No standing file or system access; grants per case go through ACC",
+        "leaver-0912,Former mobile engineer,VPN,User,HR offboarding,2026-09-12,2026-09-11,Removed 9 days late,Removed on 2 Oct",
+        "leaver-0919,Former data analyst,VPN,User,HR offboarding,2026-09-19,2026-09-18,Removed 5 days late,Removed on 2 Oct",
+        "leaver-0926,Former support agent,VPN,User,HR offboarding,2026-09-26,2026-09-25,Removed 2 days late,Removed on 2 Oct"
+      ]
+    },
+    {
+      "owner": "Ivan",
+      "folder": "Security",
+      "name": "Card-gateway key ceremony log 2026.csv",
+      "written": "2026-10-10",
+      "lines": [
+        "date,key,action,custodian_1,custodian_2,witness,hsm_slot,ticket,notes",
+        "2026-01-14,Gateway API signing key,Rotate,Ivan,Zhao,Mei Ling Tan,3,,Quarterly rotation",
+        "2026-03-02,Card PIN encryption key,Generate,Ivan,Zhao,Arif Rahman,5,,New key for the card reissue",
+        "2026-04-15,Gateway API signing key,Rotate,Ivan,Zhao,Mei Ling Tan,3,,Quarterly rotation",
+        "2026-07-15,Gateway API signing key,Rotate,Ivan,Zhao,Arif Rahman,3,,Quarterly rotation",
+        "2026-10-15,Gateway API signing key,Rotate (planned),Ivan,Zhao,Mei Ling Tan,3,PAY-94,Quarterly rotation; checklist in the SECOPS space"
+      ]
+    },
+    {
+      "owner": "Sheldon",
+      "folder": "Finance",
+      "name": "Card-network fee invoices September 2026.csv",
+      "written": "2026-10-06",
+      "lines": [
+        "invoice_no,from,type,period,amount,currency,due_date,accrual_ticket,notes",
+        "SA-2026-09-4471,Scheme A,Card network,September 2026,48210.40,SGD,2026-10-20,FIN-17,Assessment and cross-border fees",
+        "SA-2026-09-4472,Scheme A,Card network,September 2026,9640.00,MYR,2026-10-20,FIN-17,Malaysia volume",
+        "SB-2026-09-1188,Scheme B,Card network,September 2026,21987.15,SGD,2026-10-25,FIN-17,",
+        "PP-INV-2026-09,PayProcessor,Authorization routing,September 2026,190440.00,SGD,2026-10-15,FIN-17,14.37 million authorizations at SGD 0.012 plus the SGD 18000 platform fee",
+        "GW-2026-Q3,Gateway vendor,Card-network gateway licence,July to September 2026,60000.00,SGD,2026-10-31,FIN-17,Quarterly licence"
+      ]
+    },
+    {
+      "owner": "Sheldon",
+      "folder": "Finance",
+      "name": "Month-end close tracker October 2026.csv",
+      "written": "2026-10-12",
+      "lines": [
+        "task,owner,due_working_day,state,notes",
+        "Accrue card-network fees,Sheldon,WD1,Not started,September invoices are in this folder (FIN-17)",
+        "Revalue foreign-currency balances,Sheldon,WD2,Not started,Use the Q3 FX rates file; FIN-18 updates them for October",
+        "Match bank statements to the ledger,Sheldon,WD2,Not started,",
+        "Chase unapplied incoming transfers,Sheldon,WD3,In progress,FIN-19: 11 items over 30 days",
+        "Card spend rebate true-up,Sheldon,WD4,Not started,",
+        "GST workpapers for July to September,Sheldon,WD5,In progress,FIN-20",
+        "Close sign-off,Finance lead,WD6,Not started,"
+      ]
+    },
+    {
+      "owner": "Sheldon",
+      "folder": "Finance",
+      "name": "FX rates for Q3 revaluation.csv",
+      "written": "2026-10-01",
+      "lines": [
+        "currency,rate_to_sgd_on_30_sep_2026,source,used_for",
+        "USD,1.2861,Central bank closing rate,Q3 revaluation",
+        "MYR,0.3052,Central bank closing rate,Q3 revaluation",
+        "EUR,1.5128,Central bank closing rate,Q3 revaluation",
+        "IDR (per 1000),0.0832,Central bank closing rate,Q3 revaluation; IDR payouts start in Q4",
+        "AUD,0.8604,Central bank closing rate,Q3 revaluation"
+      ]
+    },
+    {
+      "owner": "Sheldon",
+      "folder": "Finance",
+      "name": "Scheme fee schedule 2026.docx",
+      "written": "2026-08-21",
+      "share": {
+        "ShiHan": "commenter"
+      },
+      "lines": [
+        "# Scheme fee schedule 2026",
+        "Owner: Sheldon (Finance Operations). Shared with ShiHan for the card routing cost estimate: please comment rather than edit.",
+        "## Card network fees",
+        "| Fee | Scheme A | Scheme B |",
+        "| Assessment fee | 0.13% of value | 0.11% of value |",
+        "| Cross-border fee | 0.60% of value | 0.55% of value |",
+        "| Network access fee | SGD 0.019 a transaction | SGD 0.021 a transaction |",
+        "| Tokenization fee | SGD 0.010 a transaction | SGD 0.008 a transaction |",
+        "| Monthly membership | SGD 4,500 | SGD 3,800 |",
+        "## PayProcessor fees",
+        "- Per authorization: SGD 0.012 up to 20 million a year, SGD 0.009 above",
+        "- Platform fee: SGD 18,000 a month",
+        "## Notes for the routing estimate",
+        "- Domestic Singapore card spend avoids the cross-border fee on both schemes",
+        "- Tokenized transactions get a 0.02% lower assessment fee on Scheme A from January 2027"
+      ]
+    },
+    {
+      "owner": "Sheldon",
+      "folder": "Vendors/PayProcessor",
+      "name": "PayProcessor quarterly business review Q3 2026.docx",
+      "written": "2026-10-02",
+      "lines": [
+        "# PayProcessor quarterly business review, Q3 2026",
+        "Notes by Sheldon from the meeting on 30 September 2026. Attendees: Sheldon, Zhao, and PayProcessor's relationship manager.",
+        "## Volumes",
+        "- 41.2 million authorizations in Q3, up 9% on Q2; Malaysia is now 23% of the volume",
+        "- Approval rate 96.8% (Q2: 96.5%); declines are mostly insufficient funds (code 51)",
+        "- Availability 99.98% against the 99.95% commitment, with three planned maintenance windows",
+        "## Product roadmap",
+        "- API version 3 available from January 2027; version 2 is switched off on 30 June 2027",
+        "- Network tokens supported for issuers from Q2 2027, which fits our in-house tokenization plan",
+        "- IDR card acquiring in Indonesia from Q1 2027",
+        "## Commercial",
+        "- Invoices for Q3 agreed with no disputes",
+        "- PayProcessor offered a lower tier at 50 million authorizations a year; to discuss at renewal",
+        "## Follow-ups",
+        "| Item | Owner | Due |",
+        "| Plan the move to API version 3 | ShiHan | 31 January 2027 |",
+        "| Ask for the new pricing tier in writing | Sheldon | 31 October 2026 |",
+        "| Next quarterly review | Sheldon | 6 January 2027 |"
+      ]
+    },
+    {
+      "owner": "Sheldon",
+      "folder": "Vendors/PayProcessor",
+      "name": "PayProcessor issuer API integration guide v4.docx",
+      "written": "2026-07-14",
+      "lines": [
+        "# PayProcessor issuer API integration guide, version 4",
+        "Published by PayProcessor for card issuers, July 2026. Saved here by Sheldon.",
+        "## Authorization requests",
+        "- PayProcessor sends each card authorization to the issuer endpoint over mutual TLS, with a pp_reference that identifies the request",
+        "- The issuer must answer within 2,000 ms. Without an answer, PayProcessor declines the request to the merchant with code 91 (issuer unavailable)",
+        "- Stand-in approval is off by default. An issuer that turns it on lets PayProcessor approve up to a stand-in limit and send an advice message afterwards",
+        "## Late answers",
+        "- An answer that arrives after 2,000 ms is logged and ignored. The issuer must release any hold it placed for that request",
+        "## Settlement",
+        "- A daily settlement file at 06:00 SGT lists each cleared transaction by pp_reference",
+        "## Answer codes",
+        "| Code | Meaning |",
+        "| 00 | Approved |",
+        "| 05 | Do not honour |",
+        "| 51 | Insufficient funds |",
+        "| 91 | Issuer unavailable or no answer within 2,000 ms |",
+        "| 96 | System malfunction |"
+      ]
+    }
+  ],
+  "live": [
+    {
+      "step": 3,
+      "owner": "Terrance",
+      "name": "PP-58213 issuer timeouts {date} 1400-1425.csv",
+      "lines": [
+        "# PayProcessor issuer connectivity log",
+        "# Case PP-58213, opened {date} 14:12 SGT by PayProcessor operations",
+        "# Issuer: Company A (issuer ID CA-0417)",
+        "# Endpoint: https://api.companya.example/payment-service/v2/authorize",
+        "# Window: {date} 14:00 to 14:25 SGT, exported 14:26 SGT",
+        "# A timeout means Company A did not answer within 2,000 ms. Each one failed for the cardholder: we declined it to the merchant with code 91 (issuer unavailable). Stand-in approval is off for this issuer.",
+        "# So far: 6,694 requests and 387 timeouts (failed card payments), all since 14:10, rising every minute.",
+        "minute_sgt,requests_sent,answered_in_time,timeouts,timeout_rate_pct,p95_answer_ms",
+        "14:00,268,268,0,0.0,434",
+        "14:01,248,248,0,0.0,412",
+        "14:02,258,258,0,0.0,443",
+        "14:03,245,245,0,0.0,436",
+        "14:04,257,257,0,0.0,446",
+        "14:05,257,257,0,0.0,403",
+        "14:06,259,259,0,0.0,434",
+        "14:07,256,256,0,0.0,397",
+        "14:08,257,257,0,0.0,425",
+        "14:09,266,266,0,0.0,387",
+        "14:10,263,254,9,3.4,1963",
+        "14:11,257,246,11,4.3,over 2000",
+        "14:12,261,248,13,5.0,over 2000",
+        "14:13,248,233,15,6.0,over 2000",
+        "14:14,266,248,18,6.8,over 2000",
+        "14:15,246,227,19,7.7,over 2000",
+        "14:16,257,235,22,8.6,over 2000",
+        "14:17,268,243,25,9.3,over 2000",
+        "14:18,254,228,26,10.2,over 2000",
+        "14:19,256,228,28,10.9,over 2000",
+        "14:20,264,233,31,11.7,over 2000",
+        "14:21,247,217,30,12.1,over 2000",
+        "14:22,261,228,33,12.6,over 2000",
+        "14:23,255,221,34,13.3,over 2000",
+        "14:24,262,226,36,13.7,over 2000",
+        "14:25,258,221,37,14.3,over 2000"
+      ]
+    },
+    {
+      "step": 7,
+      "owner": "Terrance",
+      "name": "PP-58213 settlement export {date} 1410-1502.csv",
+      "lines": [
+        "# PayProcessor settlement export for issuer Company A (issuer ID CA-0417)",
+        "# Case PP-58213. Window {date} 14:10 to 15:02 SGT. Prepared {date} 16:40 SGT so the issuer can match it against its own records by pp_reference.",
+        "# Summary of card payments in the window",
+        "# Authorization requests sent to Company A: 13,640",
+        "# Approved by Company A within 2,000 ms: 12,328 (all settled in tonight's batch)",
+        "# Failed, no answer within 2,000 ms, declined to the merchant with code 91: 1,312",
+        "# Of the 1,312 failed requests: approved by stand-in 0, settled 0, reversed 0. None of them reached a cardholder's statement from our side.",
+        "# Late answers from Company A that arrived after the 2,000 ms limit: 87. They were logged and ignored (integration guide, Late answers).",
+        "# We cannot tell which later approvals were retries: a new attempt by the same cardholder is a new request with a new pp_reference.",
+        "#",
+        "# Per-minute breakdown",
+        "minute_sgt,requests,approved,failed_no_answer",
+        "14:10,263,254,9",
+        "14:11,257,246,11",
+        "14:12,261,248,13",
+        "14:13,248,233,15",
+        "14:14,266,248,18",
+        "14:15,246,227,19",
+        "14:16,257,235,22",
+        "14:17,268,243,25",
+        "14:18,254,228,26",
+        "14:19,256,228,28",
+        "14:20,264,233,31",
+        "14:21,247,217,30",
+        "14:22,261,228,33",
+        "14:23,255,221,34",
+        "14:24,262,226,36",
+        "14:25,258,221,37",
+        "14:26,259,221,38",
+        "14:27,246,208,38",
+        "14:28,246,207,39",
+        "14:29,260,218,42",
+        "14:30,266,221,45",
+        "14:31,265,218,47",
+        "14:32,260,213,47",
+        "14:33,267,217,50",
+        "14:34,258,210,48",
+        "14:35,246,202,44",
+        "14:36,261,215,46",
+        "14:37,265,217,48",
+        "14:38,265,222,43",
+        "14:39,265,225,40",
+        "14:40,255,220,35",
+        "14:41,265,231,34",
+        "14:42,247,218,29",
+        "14:43,253,226,27",
+        "14:44,259,235,24",
+        "14:45,253,232,21",
+        "14:46,246,228,18",
+        "14:47,249,234,15",
+        "14:48,248,236,12",
+        "14:49,264,252,12",
+        "14:50,256,245,11",
+        "14:51,252,242,10",
+        "14:52,249,240,9",
+        "14:53,264,255,9",
+        "14:54,265,257,8",
+        "14:55,248,241,7",
+        "14:56,266,259,7",
+        "14:57,264,258,6",
+        "14:58,255,250,5",
+        "14:59,247,243,4",
+        "15:00,263,260,3",
+        "15:01,257,255,2",
+        "15:02,263,261,2",
+        "#",
+        "# First 12 of the 1,312 failed requests",
+        "pp_reference,time_sgt,amount,currency,merchant,result",
+        "PPR-58213-0001,14:10:04,128.40,SGD,Cloudnest Hosting,declined code 91",
+        "PPR-58213-0002,14:10:11,36.90,SGD,Straits Courier,declined code 91",
+        "PPR-58213-0003,14:10:19,412.00,SGD,Orchid Air Travel,declined code 91",
+        "PPR-58213-0004,14:10:26,88.15,MYR,Petaling Print Works,declined code 91",
+        "PPR-58213-0005,14:10:33,19.80,SGD,Bayfront Catering,declined code 91",
+        "PPR-58213-0006,14:10:41,1250.00,SGD,Nimbus Software,declined code 91",
+        "PPR-58213-0007,14:10:47,64.30,SGD,Harbourline Taxi,declined code 91",
+        "PPR-58213-0008,14:10:55,230.00,MYR,Kedai Runcit Aminah,declined code 91",
+        "PPR-58213-0009,14:11:02,54.00,SGD,Tanjong Florist,declined code 91",
+        "PPR-58213-0010,14:11:09,905.75,SGD,Metro Cowork,declined code 91",
+        "PPR-58213-0011,14:11:15,12.60,SGD,Harbourline Taxi,declined code 91",
+        "PPR-58213-0012,14:11:24,318.20,SGD,Seng Huat Hardware,declined code 91"
+      ]
+    },
+    {
+      "step": 7,
+      "owner": "Sheldon",
+      "name": "Company A payment records for PP-58213 (copy for PayProcessor).csv",
+      "lines": [
+        "# Company A payment ledger extract, a copy prepared for PayProcessor case PP-58213",
+        "# Prepared by Sheldon (Finance Operations) on {date} at 17:05 SGT, for matching only. Remove PayProcessor's access when the case closes.",
+        "# Window {date} 14:10 to 15:02 SGT. References and amounts only: no customer names or card numbers.",
+        "# Summary",
+        "# Authorization attempts that timed out before an answer reached PayProcessor: 1,312. All 1,312 match PayProcessor's failed requests by pp_reference; none unmatched on either side.",
+        "#   Failed cleanly, customer not charged: 1,098",
+        "#   Succeeded on retry (a later attempt was approved and settled once): 214",
+        "#   Charged twice: 0",
+        "# Late internal approvals among the 1,312 (our answer came after 2,000 ms): 87. Their card holds were released automatically by 15:20 SGT and none were captured.",
+        "# Customers with at least one timed-out attempt: 871. Singapore 1,004 attempts in SGD, Malaysia 308 in MYR.",
+        "#",
+        "attempt_ref,pp_reference,time_sgt,amount,currency,ledger_outcome,retry_attempt_ref,retry_approved_sgt,times_charged",
+        "CA-ATT-7731402,PPR-58213-0001,14:10:04,128.40,SGD,failed cleanly,,,0",
+        "CA-ATT-7731439,PPR-58213-0002,14:10:11,36.90,SGD,succeeded on retry,CA-ATT-7731905,14:12:40,1",
+        "CA-ATT-7731476,PPR-58213-0003,14:10:19,412.00,SGD,failed cleanly,,,0",
+        "CA-ATT-7731513,PPR-58213-0004,14:10:26,88.15,MYR,failed cleanly,,,0",
+        "CA-ATT-7731550,PPR-58213-0005,14:10:33,19.80,SGD,failed cleanly,,,0",
+        "CA-ATT-7731587,PPR-58213-0006,14:10:41,1250.00,SGD,succeeded on retry,CA-ATT-7734412,14:19:05,1",
+        "CA-ATT-7731624,PPR-58213-0007,14:10:47,64.30,SGD,failed cleanly,,,0",
+        "CA-ATT-7731661,PPR-58213-0008,14:10:55,230.00,MYR,failed cleanly,,,0",
+        "CA-ATT-7731698,PPR-58213-0009,14:11:02,54.00,SGD,failed cleanly,,,0",
+        "CA-ATT-7731735,PPR-58213-0010,14:11:09,905.75,SGD,failed cleanly (late approval, hold released 15:20),,,0",
+        "CA-ATT-7731772,PPR-58213-0011,14:11:15,12.60,SGD,failed cleanly,,,0",
+        "CA-ATT-7731809,PPR-58213-0012,14:11:24,318.20,SGD,failed cleanly,,,0"
+      ]
+    }
+  ]
+}

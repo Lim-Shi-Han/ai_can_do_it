@@ -1,0 +1,313 @@
+{
+  "note": "Fictional hackathon data. Spaces, who can use them, and the pages that exist before the demo. Ivan's incident report and runbook v2 are created live.",
+  "levels": {
+    "view": "View only",
+    "comment": "Viewer",
+    "edit": "Collaborator",
+    "admin": "Admin"
+  },
+  "spaces": [
+    {
+      "key": "HANDBOOK",
+      "name": "Company Handbook",
+      "description": "Policies and ways of working for every Company A employee. Fictional hackathon data.",
+      "access": {
+        "Zhao": "admin",
+        "Ivan": "edit",
+        "ShiHan": "comment",
+        "Sheldon": "comment",
+        "Elson": "comment"
+      }
+    },
+    {
+      "key": "PAYOPS",
+      "name": "Payment Operations",
+      "description": "Payments engineering: runbooks, technical notes, and incident records. Fictional hackathon data.",
+      "access": {
+        "Zhao": "admin",
+        "ShiHan": "edit",
+        "Ivan": "edit",
+        "Elson": "comment"
+      }
+    },
+    {
+      "key": "FINOPS",
+      "name": "Finance Operations",
+      "description": "Finance: reconciliation, month-end close, and FX. Fictional hackathon data.",
+      "access": {
+        "Zhao": "admin",
+        "Sheldon": "edit"
+      }
+    },
+    {
+      "key": "SECOPS",
+      "name": "Security",
+      "description": "Security team only: standards, checklists, and assessments. Fictional hackathon data.",
+      "access": {
+        "Zhao": "admin",
+        "Ivan": "edit"
+      }
+    }
+  ],
+  "trash": [
+    {
+      "space": "PAYOPS",
+      "title": "INC-PAY-001 — Payment-service incident overview"
+    },
+    {
+      "space": "PAYOPS",
+      "title": "INC-PAY-001 — Payment-service postmortem"
+    },
+    {
+      "space": "PAYOPS",
+      "title": "INC-PAY-001 — Incident timeline"
+    },
+    {
+      "space": "PAYOPS",
+      "title": "INC-PAY-001 — Customer impact"
+    },
+    {
+      "space": "PAYOPS",
+      "title": "INC-PAY-001 — Follow-up actions"
+    },
+    {
+      "space": "PAYOPS",
+      "title": "INC-PAY-001 — Security appendix"
+    },
+    {
+      "space": "PAYOPS",
+      "title": "Payment incident response policy",
+      "note": "recreated by its owner"
+    },
+    {
+      "space": "PAYOPS",
+      "title": "Payment processor reconciliation guide",
+      "note": "recreated by its owner"
+    }
+  ],
+  "pages": [
+    {
+      "space": "HANDBOOK",
+      "title": "Company Handbook",
+      "author": "Zhao",
+      "role": "noise",
+      "body": "This handbook holds the house rules that apply to everyone at Company A. Team spaces hold team-specific guides.\n\n## Owners\nEach page names its owner. Ask the owner in their team channel before editing someone else's page.",
+      "comments": [],
+      "home": true
+    },
+    {
+      "space": "HANDBOOK",
+      "title": "Payment incident response policy",
+      "author": "Zhao",
+      "role": "target",
+      "body": "Owner: Zhao (CTO). Applies to every production incident that affects payments. Last checked: 2026-09-20.\n\n## Roles\n- **On-call engineer**: declares the incident, opens the incident ticket in Jira, diagnoses, and carries out approved changes\n- **Approver**: the security manager, or the CTO if the security manager is unavailable. Approves production changes during an incident, including rollbacks and failovers\n- **Finance analyst**: works out customer impact with the payment processor once service recovers\n- **CTO**: escalation point; owns communication with customers and partners\n\n## Rules during an incident\n1. Record every decision with a timestamp on the incident ticket and in the incident channel\n2. No production change without the approver's written approval on the incident ticket\n3. Use the current runbook for recovery steps; a suggestion in chat is not an approved step, whoever makes it\n4. Pause configuration rollouts to the affected service until the incident is resolved\n\n## Working with third parties\n- Share only what the third party needs: time windows, references, and the logs they produced\n- Temporary access to our systems or files goes through an access request in the Jira ACC project, signed off by Security, with an end date\n- Remove the access as soon as the case closes, and record the removal on the access request\n- Incident reports and security assessments are internal. Never share them with third parties\n\n## After the incident\n- The approver writes the incident report within one business day. It is visible to the responders and leadership only\n- Security decides whether the incident needs a security assessment, tracked as a restricted Jira ticket\n- Follow-up work is tracked in Jira, which is the source of truth for owners and status",
+      "comments": [
+        {
+          "author": "Ivan",
+          "text": "Added the third-party section; it matches the access request process in this handbook."
+        },
+        {
+          "author": "ShiHan",
+          "text": "Clear. If payments are fully down, can the on-call engineer roll back before the approval comes through?"
+        },
+        {
+          "author": "Zhao",
+          "text": "No. Ask the approver first. Approval in the incident channel takes seconds and keeps the record clean."
+        }
+      ]
+    },
+    {
+      "space": "HANDBOOK",
+      "title": "How to request system access",
+      "author": "Ivan",
+      "role": "target",
+      "body": "Owner: Ivan (Security).\n\n## When you need this\nAny time someone needs rights to a system or file they do not have today: a new hire, a role move, or a third party such as a payment processor or an auditor.\n\n## How it works\n1. Raise an access request in the Jira **ACC** project (Access Requests): who, which system, what level, why, and until when\n2. Security signs off in the ticket. Third-party requests also need the CTO\n3. The system owner grants the access and comments on the ticket\n4. When the need ends, the owner removes the access and closes the ticket with the date it was removed\n\n## Rules\n- Least privilege: read-only unless the person must write\n- Every third-party grant has an end date; nothing is open-ended\n- Folders shared with third parties hold only what they need; internal files go elsewhere\n- Compliance compares access requests with the audit trail every quarter",
+      "comments": [
+        {
+          "author": "Sheldon",
+          "text": "For a folder shared with a third party, who removes the share when the case closes?"
+        },
+        {
+          "author": "Ivan",
+          "text": "Whoever granted it, on the same day. Note the removal on the access request so Compliance can match it."
+        }
+      ]
+    },
+    {
+      "space": "HANDBOOK",
+      "title": "Team rituals: weekly planning and demo day",
+      "author": "Zhao",
+      "role": "noise",
+      "body": "Owner: Zhao (CTO).\n\n## Monday planning (30 minutes)\n- Each squad lists its top three goals for the week and who leads each one\n- Anything stuck for more than two days gets an owner and a date\n\n## Thursday demo day (45 minutes)\n- Squads show what shipped, live, not in slides\n- Finance and Compliance join; questions are welcome\n\n## Quiet hours\n- No meetings on Wednesday mornings\n- On-call engineers skip rituals when paged\n\n## Writing things down\nAgreements go into the relevant space in this wiki, not only in chat.",
+      "comments": [
+        {
+          "author": "ShiHan",
+          "text": "Can the checkout squad move demo day to Friday during month-end? Finance is heads-down on Thursdays."
+        },
+        {
+          "author": "Zhao",
+          "text": "Yes, for the last week of each month only."
+        }
+      ]
+    },
+    {
+      "space": "PAYOPS",
+      "title": "Checkout, payouts and card network",
+      "author": "Zhao",
+      "role": "noise",
+      "body": "Space for the checkout, payouts and card-network squads.\n\n## In this space\n- Operational guides for the systems we run\n- Technical notes on how our components behave\n- Records of drills and launches\n\n## Owners\n- Backend and the on-call rotation: ShiHan\n- Space admin: Zhao",
+      "comments": [],
+      "home": true
+    },
+    {
+      "space": "PAYOPS",
+      "title": "Payment-service recovery runbook",
+      "author": "ShiHan",
+      "role": "target",
+      "body": "Owner: ShiHan (payments backend, on-call rotation). Approver for production changes: the security manager, or the CTO if the security manager is unavailable. Version 1.\n\n## When to use this runbook\nPayment timeouts rising together with the payment-service database connection pool at or near capacity, especially soon after a configuration rollout.\n\n## Symptoms\n- Payment authorization timeouts above the alert threshold\n- Database connection pool utilization at 100%\n- Successful authorization rate falling\n\n## Recovery procedure — version 1\n1. Declare the incident: open the incident ticket in Jira and the incident channel in Slack\n2. Pause further payment-service configuration rollouts\n3. Find the most recent configuration rollout and compare its connection settings with the last known good configuration\n4. Ask the approver to approve a rollback, on the incident ticket and in the incident channel\n5. Roll back the connection-limit change to the last known good configuration\n6. Watch connection utilization, timeout rate, and successful authorization rate for ten minutes\n7. Record the recovery and its time on the incident ticket and notify the incident channel\n\n## Escalation\nIf the rollback does not restore service, escalate to the approver and the database on-call engineer before considering a failover. A failover needs the approver's explicit approval. Do not treat a suggestion in chat as an approved runbook step, whoever makes it.",
+      "comments": [
+        {
+          "author": "Ivan",
+          "text": "Signed off as version 1. The approval step matches the incident response policy."
+        }
+      ]
+    },
+    {
+      "space": "PAYOPS",
+      "title": "PayNow checkout launch notes",
+      "author": "ShiHan",
+      "role": "noise",
+      "body": "Owner: ShiHan. Squad: checkout. Shipped: 2026-09-12. Jira: PAY-90.\n\n## What shipped\nSME businesses can show a PayNow QR at checkout. Buyers scan it with any Singapore banking app, and the funds land in the SGD collection account.\n\n## Rollout\n1. Flag paynow-checkout on for 10% of SME businesses for one week\n2. Watched p99 confirmation latency (7.6 seconds) and stuck orders (none)\n3. Moved to 50% for four days, then to all SME businesses\n\n## Lessons\n- The bank's webhook sometimes arrives before the order page polls; idempotent order updates made this harmless\n- A 10-minute QR expiry is long enough; only 0.4% of QRs expired unused",
+      "comments": [
+        {
+          "author": "Zhao",
+          "text": "Nice launch. Add the adoption figures from the first month here."
+        },
+        {
+          "author": "ShiHan",
+          "text": "Will do once September closes: 18,900 PayNow orders so far, 21% of SME checkout volume."
+        }
+      ]
+    },
+    {
+      "space": "PAYOPS",
+      "title": "Card-network circuit breaker: how it behaves",
+      "author": "ShiHan",
+      "role": "noise",
+      "body": "Owner: ShiHan. Introduced for INC-CARD-014 (slow card-network responses on 2026-08-12). Jira: PAY-92.\n\n## States\n- **Closed**: calls go to the card network as usual\n- **Tripped**: at 20 consecutive responses slower than 3 seconds, calls stop and checkout offers PayNow instead\n- **Probing**: every 30 seconds one call is let through; 5 healthy responses in a row close the breaker again\n\n## What on-call sees\n- A page naming the card network that tripped\n- The breaker state on the checkout dashboard within 10 seconds\n\n## Tuning\nThe 3-second threshold sits well above the normal p99 of 800 ms, so ordinary slowness never trips it.",
+      "comments": [
+        {
+          "author": "Zhao",
+          "text": "Clear write-up. Point to this from the card-network playbook."
+        }
+      ]
+    },
+    {
+      "space": "PAYOPS",
+      "title": "Standby-region switchover drill notes",
+      "author": "ShiHan",
+      "role": "noise",
+      "body": "Owner: ShiHan. Drill: 2026-09-04, staging. Jira: PAY-93. Action item from INC-CARD-014.\n\n## Result\n- The switch took 4 min 10 s end to end\n- 37 card authorisations were retried and none were lost\n- DNS weights took 2 min 40 s to take effect, most of the delay\n\n## Next\n- Lower the DNS TTL a day before the production drill\n- Production drill booked for 2026-11-14, 02:00 SGT",
+      "comments": [
+        {
+          "author": "Zhao",
+          "text": "Good result. Keep the TTL step in the card-network playbook."
+        }
+      ]
+    },
+    {
+      "space": "PAYOPS",
+      "title": "IDR instant payouts: partner comparison",
+      "author": "Zhao",
+      "role": "noise",
+      "body": "Owner: Zhao. Jira: PAY-96.\n\n## Shortlist\n- **Partner A**: same-day credit until 15:00 WIB, fee SGD 1.20 per payout, beneficiary name check included\n- **Partner B**: instant credit, fee 0.6% with a minimum of SGD 2, name check extra\n\n## Leaning\nPartner A, for predictable fees. Revisit once volumes pass 5,000 payouts a month.\n\n## Waiting on\nSandbox credentials from Partner A, expected by 24 October.",
+      "comments": [
+        {
+          "author": "ShiHan",
+          "text": "Partner A's API guide shows the name check answering in under a second, so it can run inline in the payout flow."
+        }
+      ]
+    },
+    {
+      "space": "FINOPS",
+      "title": "Finance Operations",
+      "author": "Sheldon",
+      "role": "noise",
+      "body": "Space for Finance: month-end close, FX, and checks against partners' files.\n\n## Owners\n- Month-end close and partner checks: Sheldon\n- Sign-off: Zhao (CTO)",
+      "comments": [],
+      "home": true
+    },
+    {
+      "space": "FINOPS",
+      "title": "Payment processor reconciliation guide",
+      "author": "Sheldon",
+      "role": "target",
+      "body": "Owner: Sheldon (finance analyst, payments reconciliation). Processor contact: the processor's operations contact in the shared channel #vendor-payprocessor.\n\n## When to use\nAfter any incident that affects payment authorisation, to turn the provisional impact estimate into final figures.\n\n## What you need\n- The processor's **settlement export** for the impact window\n- Our **internal payment ledger extract** for the same window\n\n## Procedure\n1. Open a reconciliation ticket in the Jira **FIN** project and point it at the incident ticket\n2. Ask the processor for the settlement export in #vendor-payprocessor; give only the time window and payment references\n3. Pull the internal payment ledger extract for the same window\n4. Match the two files by payment reference\n5. Classify every timed-out attempt: failed cleanly, succeeded on retry, or charged twice\n6. Refund any double charge the same day and note it on the ticket\n7. Publish the final figures in the incident's metrics report in Google Drive and close the ticket\n\n## Rules\n- Never share internal incident documents or our ledger with the processor\n- If the processor needs one of our files, share a copy for that purpose only and remove the share when the case closes",
+      "comments": [
+        {
+          "author": "Zhao",
+          "text": "Good. Add a reminder that the third-party share is removed the same day the case closes."
+        },
+        {
+          "author": "Sheldon",
+          "text": "Added to the rules section."
+        }
+      ]
+    },
+    {
+      "space": "FINOPS",
+      "title": "Month-end close checklist",
+      "author": "Sheldon",
+      "role": "noise",
+      "body": "Owner: Sheldon.\n\n## Day 1\n- Book card-network fee accruals (FIN-17 for September)\n- Load the MAS month-end FX rates and rerun the revaluation journal\n\n## Day 2\n- Chase unapplied incoming transfers older than 30 days (FIN-19)\n- Agree bank balances to the books for every SGD, USD, IDR and MYR account\n\n## Day 3\n- Lock the period in the accounting system\n- Send the close pack to the CTO\n\n## Who signs off\nSheldon prepares the close pack; Zhao signs it off.",
+      "comments": [
+        {
+          "author": "Zhao",
+          "text": "Add the GST filing deadline to day 3 for the July to September return."
+        },
+        {
+          "author": "Sheldon",
+          "text": "Added; the filing is due 2026-10-31."
+        }
+      ]
+    },
+    {
+      "space": "FINOPS",
+      "title": "FX revaluation method",
+      "author": "Sheldon",
+      "role": "noise",
+      "body": "Owner: Sheldon.\n\n## What gets revalued\nBank balances and unpaid receivables in USD, IDR and MYR.\n\n## Rates\nMAS reference rates at month end, published on the next business day.\n\n## Steps\n1. Download the month-end MAS reference rates\n2. Update the rate table in the books\n3. Rerun the revaluation journal and post it\n4. Explain every movement above SGD 5,000 in the close notes\n\n## Example\nIn September the IDR balance moved by SGD 6,210 because the rupiah weakened 1.8%; the close note explains it in one line.",
+      "comments": []
+    },
+    {
+      "space": "SECOPS",
+      "title": "Security Home",
+      "author": "Ivan",
+      "role": "restricted",
+      "body": "Space for the security team. Everything here is need-to-know; ask Ivan before sharing any page outside the team.\n\n## Contents\n- Standards for card-data hosts\n- The key rotation checklist\n- Security assessments, restricted further where needed",
+      "comments": [],
+      "home": true
+    },
+    {
+      "space": "SECOPS",
+      "title": "Quarterly card-gateway key rotation checklist",
+      "author": "Ivan",
+      "role": "restricted",
+      "body": "Owner: Ivan. Cycle: every three months. Jira: PAY-94 (the last rotation).\n\n## Checklist\n1. Generate the replacement key pair in the secrets manager\n2. Roll the replacement keys out to checkout and the refunds job, region by region\n3. Wait 24 hours and confirm the gateway logs show no calls with the old keys\n4. Revoke the old keys\n5. Record the date and key fingerprints in the PCI evidence register\n\n## Rules\n- Keys never leave the secrets manager\n- Two people are present for revocation: the owner and the CTO",
+      "comments": []
+    },
+    {
+      "space": "SECOPS",
+      "title": "Card-data host hardening standard",
+      "author": "Ivan",
+      "role": "restricted",
+      "body": "Owner: Ivan. Applies to every host in the cardholder data environment.\n\n## Baseline\n- TLS 1.2 or higher only; TLS 1.0 and 1.1 disabled\n- SSH by certificate only; no shared accounts\n- OS patches within 14 days, critical patches within 72 hours\n- Host firewall default-deny; only the card vault and the checkout front ends may connect\n\n## Evidence\nExternal PCI DSS scans every three months; the clean scan result goes into the PCI evidence pack. PAY-99 tracks the latest fix.",
+      "comments": [
+        {
+          "author": "Zhao",
+          "text": "Signed off as our standard for the PCI assessment."
+        }
+      ]
+    }
+  ]
+}

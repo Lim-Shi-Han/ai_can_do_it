@@ -8,6 +8,9 @@ main_workflow/identities.tmp
 main_workflow/audit.db
 main_workflow/audit.head
 gdrive/*service_account*.json
+gdrive/oauth_client.json
+gdrive/tokens/
+gdrive/upload/
 main_workflow/index.db
 stand_in_jira_slack/state.json
 stand_in_jira_slack/state.tmp

@@ -3,8 +3,8 @@
 
     python3 slack_demo/slack_cli.py login Zhao               # prints the approval link
     python3 slack_demo/slack_cli.py login Zhao "<address>"   # saves Zhao's token to .env
-    python3 slack_demo/slack_cli.py reset                    # channels, members, bot, steps 1-3 posted fresh
-    python3 slack_demo/slack_cli.py play 5                   # post a later step's messages during the demo
+    python3 slack_demo/slack_cli.py reset                    # base state: channels, members, bot, no messages
+    python3 slack_demo/slack_cli.py play 1 2 3               # post steps' messages as the demo reaches them
     python3 slack_demo/slack_cli.py status
     python3 slack_demo/slack_cli.py revoke ShiHan payment-incident-001
     python3 slack_demo/slack_cli.py grant ShiHan payment-incident-001
@@ -61,7 +61,7 @@ STEPS = {
     3: [
         ("vendor-payprocessor", [
             ("Zhao", "Could you share your timeout logs? Sheldon is setting up temporary access to our case folder."),
-            ("Sheldon", "Opened PAY-102 for temporary vendor access and Zhao approved it. I've shared the case folder in Drive with you."),
+            ("Sheldon", "Opened ACC-41 for temporary vendor access and Zhao approved it. I've shared the case folder in Drive with you."),
             ("Terrance", "Uploaded our processor timeout log: failed authorizations per minute from 14:10."),
         ]),
     ],
@@ -83,18 +83,17 @@ STEPS = {
         ("vendor-payprocessor", [
             ("Terrance", "Sheldon, I can only reconcile our side of the failed payments. "
                          "Could you share Company A's payment records for the same window?"),
-            ("Sheldon", "Uploaded our internal payment ledger extract to the case folder. Tracking the reconciliation in PAY-103."),
+            ("Sheldon", "Uploaded our internal payment ledger extract to the case folder. Tracking the reconciliation in FIN-21."),
         ]),
     ],
     8: [
         ("payments", [
-            ("Zhao", "PAY-100 and PAY-103 are closed, and the processor can still read our internal ledger extract. "
+            ("Zhao", "PAY-100 and FIN-21 are closed, and the processor can still read our internal ledger extract. "
                      "They don't need our folder any more. Sheldon, please remove their access."),
-            ("Sheldon", "Done: unshared the folder from the processor and closed PAY-102 (access revoked, case closed)."),
+            ("Sheldon", "Done: unshared the folder from the processor and closed ACC-41 (access revoked, case closed)."),
         ]),
     ],
 }
-SEEDED = (1, 2, 3)   # posted by reset; the rest are posted with `play` at their point in the demo
 
 def people():
     return {u["name"]: u["slack_user_id"] for u in json.loads(IDENTITIES.read_text(encoding="utf-8"))["users"]}
@@ -140,16 +139,15 @@ def set_members(admin, cid, wanted):
 
 
 def wipe(admin, cid):
-    """Delete every message, replies before their thread, so each reset starts from fresh threads."""
+    """Delete every message, replies before their thread. Join notices need the admin."""
     authors = {uid: name for name, uid in people().items() if os.environ.get(token_key(name))}
     for page in admin.conversations_history(channel=cid, limit=200):
         for root in page["messages"]:
             thread = admin.conversations_replies(channel=cid, ts=root["ts"], limit=200)["messages"] if root.get("reply_count") else [root]
             for m in reversed(thread):
-                if m.get("subtype"):   # joins and the like
-                    continue
+                author = ADMIN if m.get("subtype") else authors.get(m.get("user"), ADMIN)
                 try:
-                    client(authors.get(m.get("user"), ADMIN)).chat_delete(channel=cid, ts=m["ts"])
+                    client(author).chat_delete(channel=cid, ts=m["ts"])
                 except SlackApiError as exc:
                     print(f"Could not delete a message in {cid}: {exc.response['error']}")
 
@@ -204,18 +202,17 @@ def cmd_reset(args):
     channels = ensure_channels(admin)
     for name in CHANNELS:
         wipe(admin, channels[name])
-    for step in SEEDED:
-        post_step(channels, step)
-    print(f"Reset {', '.join('#' + n for n in CHANNELS)}: members set, bot invited, steps {', '.join(map(str, SEEDED))} posted")
+    print(f"Reset {', '.join('#' + n for n in CHANNELS)} to the base state: members set, bot invited, no messages")
 
 
 def cmd_play(args):
     channels = channel_ids(client(ADMIN))
-    missing = [name for name, _ in STEPS[args.step] if name not in channels]
+    missing = sorted({name for step in args.steps for name, _ in STEPS[step]} - set(channels))
     if missing:
         raise SystemExit(f"Missing #{', #'.join(missing)}: run reset first")
-    post_step(channels, args.step)
-    print(f"Posted step {args.step} in #{', #'.join(dict.fromkeys(name for name, _ in STEPS[args.step]))}")
+    for step in args.steps:
+        post_step(channels, step)
+        print(f"Posted step {step} in #{', #'.join(dict.fromkeys(name for name, _ in STEPS[step]))}")
 
 
 def cmd_status(args):
@@ -257,9 +254,9 @@ def main():
     login.add_argument("address", nargs="?", help="the address the browser landed on after Allow")
     login.set_defaults(func=cmd_login)
 
-    sub.add_parser("reset", help="create the channels, set members, invite the bot, post steps 1-3 fresh").set_defaults(func=cmd_reset)
-    play = sub.add_parser("play", help="post a step's Slack messages during the demo")
-    play.add_argument("step", type=int, choices=sorted(set(STEPS) - set(SEEDED)))
+    sub.add_parser("reset", help="base state: create the channels, set members, invite the bot, delete every message").set_defaults(func=cmd_reset)
+    play = sub.add_parser("play", help="post steps' Slack messages as the demo reaches them")
+    play.add_argument("steps", type=int, nargs="+", choices=sorted(STEPS))
     play.set_defaults(func=cmd_play)
     sub.add_parser("status", help="who is in each demo channel").set_defaults(func=cmd_status)
     for verb, grant in (("grant", True), ("revoke", False)):

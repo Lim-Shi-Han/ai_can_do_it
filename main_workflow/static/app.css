@@ -130,6 +130,15 @@ select, input[type=text], input:not([type]) {
 .section p { margin: 4px 0; }
 .section ul { margin: 4px 0; padding-left: 20px; }
 .answer.none { padding: 14px 16px; color: var(--muted); }
+.answer.draft { padding: 14px 16px; }
+.draft-head { font-weight: 600; margin-bottom: 10px; }
+.draft dl { display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px; margin: 0 0 12px; }
+.draft dt { color: var(--muted); }
+.draft dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.draft dd.pre { white-space: pre-wrap; }
+.draft ul { margin: 0; padding-left: 18px; }
+.draft .row-actions { margin-bottom: 0; }
+.draft-result { font-weight: 600; }
 .cite {
   display: inline-block; font-size: 11px; font-weight: 600; padding: 0 5px; margin: 0 1px; border-radius: 5px;
   background: var(--panel-2); border: 1px solid var(--border); color: var(--accent); text-decoration: none; vertical-align: 1px;

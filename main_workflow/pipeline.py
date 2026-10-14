@@ -4,7 +4,7 @@ import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from . import gate, llm
+from . import actions, gate, llm
 
 IDENTITIES = Path(os.environ.get("IDENTITIES_FILE") or Path(__file__).resolve().parent / "identities.json")
 INCIDENT_RE = re.compile(r"\bINC-[A-Z]+-\d+\b", re.IGNORECASE)
@@ -25,6 +25,8 @@ Rules:
 - Which source decides what: the postmortem for confirmed cause, the runbook for recovery steps, Jira for current ticket status, Slack for discussion only (never an approved step), metrics reports for numbers.
 - Read the question as a colleague would: work that follows up an incident, such as its tickets and their blockers, counts as part of that incident.
 - Answer only what was asked. Skip sources that are not relevant. Keep each section to a few short sentences or bullets.
+- You cannot change anything yourself. Never say you created or changed anything.
+- Questions are always answered in text, including questions about existing tickets such as PAY-100. Call create_jira_ticket only when the user explicitly asks you to create, open, raise, or log a new ticket; it only drafts the ticket for the user to confirm.
 
 Write the answer under three headings: Confirmed, Unconfirmed or provisional, Missing. Write "None." under a heading with nothing to report."""
 
@@ -37,6 +39,7 @@ class Result:
     cited: list = field(default_factory=list)
     audit_seq: int | None = None
     dropped: list = field(default_factory=list)
+    draft: actions.Draft | None = None   # a ticket the model proposed, waiting for the user to confirm
 
 
 def load_identities(path=IDENTITIES):
@@ -60,6 +63,11 @@ def build_context(docs):
     return "\n\n---\n\n".join(blocks)
 
 
+def names(text, doc):
+    """Whether lower-cased text names the document by title or ID."""
+    return doc.title.lower() in text or re.search(rf"\b{re.escape(doc.doc_id.lower())}\b", text) is not None
+
+
 def check_answer(answer, docs, denied):
     """Drop tags that point nowhere and block answers that name anything the user was denied."""
     flags = []
@@ -71,8 +79,10 @@ def check_answer(answer, docs, denied):
         answer = TAG_RE.sub(lambda m: m.group(0) if int(m.group(1)) in valid else "", answer)
 
     lowered = answer.lower()
+    given = "\n".join(f"{doc.title}\n{doc.text}" for doc in docs).lower()   # everything the model was shown
     for d in denied:
-        if d.title.lower() in lowered or re.search(rf"\b{re.escape(d.doc_id)}\b", answer):
+        # naming a denied document reveals that it exists, unless a source the user may read names it too
+        if names(lowered, d) and not names(given, d):
             flags.append(f"denied_reference:{d.source}:{d.doc_id}")
             return NO_ANSWER, [], flags
 
@@ -81,7 +91,33 @@ def check_answer(answer, docs, denied):
     return answer, sorted(used & valid), flags
 
 
-def run(question, user_name, sources, audit, identities=None, index=None, memory=None):
+def tool_arguments(call):
+    try:
+        args = json.loads(call.get("arguments") or "{}")
+    except ValueError:
+        return {}
+    return args if isinstance(args, dict) else {}
+
+
+def retrieve(question, user, sources, index=None, incident=None):
+    """Candidates from every source, then the live permission check. Only allowed documents come back."""
+    candidates, search_errors, retrieval = [], [], {}
+    for source in sources.values():
+        try:
+            if index is not None and index.has_source(source.name):
+                candidates.extend(index.search(question, incident, source=source.name))
+                retrieval[source.name] = "index"
+            else:
+                candidates.extend(source.search(question, incident))
+                retrieval[source.name] = "live"
+        except Exception as exc:
+            search_errors.append(f"{source.name}:{type(exc).__name__}")
+    docs, decisions = gate.check(user, candidates, sources, index)
+    return docs, decisions, retrieval, search_errors
+
+
+def run(question, user_name, sources, audit, identities=None, index=None, memory=None, allow_actions=False):
+    """Answer a question, or, with allow_actions, let the model propose an action for the user to confirm."""
     identities = identities or load_identities()
     user = identities.get(user_name)
     if not user:
@@ -96,21 +132,12 @@ def run(question, user_name, sources, audit, identities=None, index=None, memory
     kept_turns = len(memory.messages()) // 2 if memory is not None else 0
 
     incident = find_incident(question) or (memory.incident_id if memory is not None else None)
-
-    candidates, search_errors, retrieval = [], [], {}
-    for source in sources.values():
-        try:
-            if index is not None and index.has_source(source.name):
-                candidates.extend(index.search(question, incident, source=source.name))
-                retrieval[source.name] = "index"
-            else:
-                candidates.extend(source.search(question, incident))
-                retrieval[source.name] = "live"
-        except Exception as exc:
-            search_errors.append(f"{source.name}:{type(exc).__name__}")
-
-    docs, decisions = gate.check(user, candidates, sources, index)
+    docs, decisions, retrieval, search_errors = retrieve(question, user, sources, index, incident)
     denied = [d for d in decisions if not d.allowed]
+    record = {
+        "question": question, "incident_id": incident, "role": user["role"], "retrieval": retrieval,
+        "decisions": [d.to_dict() for d in decisions], "search_errors": search_errors, "model": llm.MODEL,
+    }
 
     flags = []
     if docs:
@@ -118,24 +145,31 @@ def run(question, user_name, sources, audit, identities=None, index=None, memory
         if memory is not None:
             messages += memory.messages()
         messages.append({"role": "user", "content": f"Question: {question}\n\nSources:\n\n{build_context(docs)}"})
-        answer, cited_idx, flags = check_answer(llm.chat(messages), docs, denied)
+        tools = None
+        if allow_actions and "jira" in sources and actions.asks_for_ticket(question):
+            people = sorted(name for name, u in identities.items() if u.get("atlassian_account_id"))
+            tools = [actions.ticket_tool(sources["jira"].projects, people)]
+        reply = llm.complete(messages, tools=tools)
+        call = next((c["function"] for c in reply.get("tool_calls") or []
+                     if c["function"]["name"] == actions.TOOL_NAME), None)
+        if call:
+            draft, refusal, seq = actions.propose(tool_arguments(call), question, user_name, identities, docs,
+                                                  sources["jira"], incident, audit, record)
+            return Result(user_name, question, refusal or "", [], seq, dropped, draft)
+        if not reply.get("content"):
+            raise RuntimeError("vLLM returned an empty answer")
+        answer, cited_idx, flags = check_answer(reply["content"].strip(), docs, denied)
     else:
         answer, cited_idx = NO_ANSWER, []
 
     cited = [docs[i - 1] for i in cited_idx]
     seq = audit.append(user_name, "query", {
-        "question": question,
-        "incident_id": incident,
-        "role": user["role"],
-        "retrieval": retrieval,
+        **record,
         "history": {"kept_turns": kept_turns, "dropped_turns": len(dropped)},
-        "decisions": [d.to_dict() for d in decisions],
         "cited": [{"tag": f"S{i}", "source": d.source, "doc_id": d.doc_id, "version": d.version}
                   for i, d in zip(cited_idx, cited)],
         "answer": answer,
         "flags": flags,
-        "search_errors": search_errors,
-        "model": llm.MODEL,
     })
     if memory is not None:
         memory.add(question, answer, [(d.source, d.doc_id, d.version) for d in cited], incident, seq)

@@ -110,6 +110,7 @@ python3 -m main_workflow.sync status
 
 python3 -m main_workflow.cli ask --as ShiHan "What caused the INC-PAY-001 outage, what is the latest recovery procedure, and what work remains?"
 python3 -m main_workflow.cli chat --as ShiHan          # /as Terrance switches user, /reset clears, /quit leaves
+python3 -m main_workflow.cli reset                     # base state for every platform; see Reset below
 
 python3 -m main_workflow.cli audit query --as Elson --user ShiHan --container PAYOPS --since 30d
 python3 -m main_workflow.cli audit query --as Elson --doc 393217    # who retrieved this page
@@ -176,6 +177,8 @@ oauth_config:
     bot: [channels:history, groups:history, channels:read, groups:read, users:read, commands]
 settings:
   socket_mode_enabled: true
+  interactivity:
+    is_enabled: true
   event_subscriptions:
     bot_events: [message.channels, message.groups, member_joined_channel, member_left_channel]
 ```
@@ -199,6 +202,27 @@ settings:
 - Message, edit, and delete events update the index within seconds. The 60 s poll stays as the backup for missed events.
 - Members joining or leaving a channel are logged as `permission_change` under the affected user. Access is still checked live on every question; the entry only records when it changed.
 - Trade-offs: access is channel membership, which is stricter than Slack itself (any full member can read a public channel). Bot tokens cannot call `search.messages`, so Slack is searched through the index only.
+
+## Actions: creating Jira tickets
+
+The Brain can create Jira tickets through a real tool call, in the web chat and with `/brain` (`main_workflow/actions.py`):
+
+1. **Router.** A request that asks for a ticket ("create / open / raise / log … ticket / issue / Jira") is offered the `create_jira_ticket` tool. Questions never are: offered the tool on every question, the model drafted tickets for questions about existing tickets, and its answers got worse.
+2. **Tool call.** The model decides whether to call the tool, and fills in project, summary, description, assignee, labels, and the sources it used, from the same permission-checked sources as an answer. If it answers in text instead, that is a normal answer.
+3. **Draft.** Code validates the call and asks Jira, live, whether the asker may create tickets in that project. If not, the asker is told which projects they may use (Elson and Terrance: none). Otherwise the asker sees the exact draft and clicks **Create in Jira** or **Cancel**. The draft stays on the server and is used once; only its owner can confirm it, within 15 minutes.
+4. **Create.** Plain code creates the ticket after checking Jira's permission again, with the asker as reporter, using the system's Jira account. The description lists the sources and says who confirmed it.
+
+The model never calls Jira. Each step is audited: `action_proposed`, `action_executed`, `action_cancelled`, or `action_denied`. The command line (`cli.py ask`) offers no tools. Slack's buttons need **Interactivity** on in the Slack app (see the manifest above). Trade-off: production would create the ticket with the asker's own Jira login (OAuth) instead of the system account plus a permission check.
+
+## Reset
+
+`python -m main_workflow.cli reset`, or **Reset rehearsal** in the console, puts every configured platform back to the demo's base state (`main_workflow/rehearsal.py`):
+
+- **Jira:** projects holding tickets created during a demo are rebuilt, so the next tickets get PAY-100, ACC-41, and FIN-21 again (Jira never reuses a key; this takes minutes per project). Then roles, statuses, and comments go back to the seed.
+- **Slack:** the demo channels keep their members and the bot, and every message is deleted. The demo posts its steps with `slack_demo/slack_cli.py play`.
+- **Confluence and Drive**, when configured: the original runbook, and Drive re-shared with ShiHan.
+
+With the web server running, the reset goes through it: it also re-syncs the search index and clears every web and `/brain` chat. With no server running, it also deletes the audit trail and search index, so stop the server first for a clean audit trail. The console never clears the audit trail.
 
 ## Adding a source
 

@@ -1,4 +1,5 @@
 import math
+import os
 from datetime import datetime, timezone
 
 from confluence.confluence_cli import SPACE_KEY, Confluence, load_local_env, storage_to_text
@@ -9,19 +10,25 @@ from .base import Candidate, Doc, keywords
 class ConfluenceSource:
     name = "confluence"
 
-    def __init__(self, space_key=SPACE_KEY):
+    def __init__(self, space_keys=None):
         load_local_env()
         self.api = Confluence()
-        self.space_key = space_key
+        self.space_keys = space_keys or [
+            k.strip() for k in (os.environ.get("CONFLUENCE_SPACE_KEYS") or SPACE_KEY).split(",") if k.strip()]
+        spaces = self.api.request("GET", "/wiki/api/v2/spaces", {"keys": ",".join(self.space_keys)}).get("results", [])
+        self.space_by_id = {str(s["id"]): s["key"] for s in spaces}
+
+    def _scope(self):
+        return "space in (" + ", ".join(f'"{k}"' for k in self.space_keys) + ")"
 
     def _cql(self, cql, limit):
         path = "/wiki/rest/api/content/search"
-        params = {"cql": cql, "limit": min(limit, 100), "expand": "version"}
+        params = {"cql": cql, "limit": min(limit, 100), "expand": "version,space"}
         out = []
         while path and len(out) < limit:
             response = self.api.request("GET", path, params)
             out.extend(
-                Candidate(self.name, item["id"], item["title"], self.space_key,
+                Candidate(self.name, item["id"], item["title"], item.get("space", {}).get("key", ""),
                           item.get("version", {}).get("number"))
                 for item in response.get("results", [])
             )
@@ -35,7 +42,7 @@ class ConfluenceSource:
         if not terms:
             return []
         match = " or ".join(f'text ~ "{t}"' for t in terms)
-        return self._cql(f'space="{self.space_key}" and type=page and ({match})', limit)
+        return self._cql(f"{self._scope()} and type=page and ({match})", limit)
 
     def can_access(self, user, doc_id):
         account_id = user.get("atlassian_account_id")
@@ -58,11 +65,11 @@ class ConfluenceSource:
             version=page["version"]["number"],
             updated_at=page["version"].get("createdAt", ""),
             text=storage_to_text(page.get("body", {}).get("storage", {}).get("value")),
-            container=self.space_key,
+            container=self.space_by_id.get(str(page.get("spaceId")), ""),
         )
 
     def changes_since(self, ts):
-        cql = f'space="{self.space_key}" and type=page'
+        cql = f"{self._scope()} and type=page"
         if ts:
             # relative dates avoid CQL's dependence on the account's profile timezone
             since = datetime.fromisoformat(ts.replace("Z", "+00:00"))

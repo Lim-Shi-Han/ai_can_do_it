@@ -1,64 +1,63 @@
-# Confluence hackathon fixture
+# Confluence demo spaces
 
-Target: `https://hackathontencent.atlassian.net/wiki/spaces/PAYOPS/overview`
+Site: `https://hackathontencent.atlassian.net/wiki`. Four spaces hold the fictional Company A content. Only standing documents exist before the demo; Ivan's incident report (step 6) and runbook v2 (step 11) are created live.
 
-This folder contains eight fictional pages for incident `INC-PAY-001`. The seed story is dated 2026-09-28 and assumes a 2026-09-29 demo. Agree on any date change with the Jira, Slack, and Drive owners before publishing. The Jira keys, Slack channel, and Drive file title in `seed_pages.json` are placeholders until the other owners confirm them.
+| Space | Purpose | ShiHan | Zhao | Ivan | Elson | Sheldon | Terrance |
+|---|---|---|---|---|---|---|---|
+| `HANDBOOK` Company Handbook | Policies for every employee | Viewer | Admin | Collaborator | Viewer | Viewer | · |
+| `PAYOPS` Payment Operations | Payments engineering | Collaborator | Admin | Collaborator | Viewer | · | · |
+| `FINOPS` Finance Operations | Reconciliation, month-end, FX | · | Admin | · | · | Collaborator | · |
+| `SECOPS` Security | Security team only | · | Admin | Collaborator | · | · | · |
 
-## Publish the pages
+Viewer can read and comment; Collaborator can also add, edit, and restrict pages. Terrance, the external contractor, has no Confluence access.
 
-1. Create an Atlassian API token at <https://id.atlassian.com/manage-profile/security/api-tokens>. This script supports a standard token through the site URL. If you create a scoped token, also set `ATLASSIAN_CLOUD_ID` so requests use Atlassian's scoped-token gateway. The account needs permission to create and edit pages in `PAYOPS`.
-2. Create a `.env` file in the repository root with your Slack/Atlassian account email and the token. `.env` is ignored by Git. Keep the token out of chat:
+## Files
 
-   ```text
-   ATLASSIAN_EMAIL=your-atlassian-email@example.com
-   ATLASSIAN_API_TOKEN=your-new-token
-   ```
+| File | Purpose |
+|---|---|
+| `demo_spaces.json` | Spaces, who gets which role, the pages (with author and comments), and the old pages moved to the trash |
+| `demo_spaces.py` | Creates the spaces, sets the roles, and writes each page **as its author** using their own token |
+| `seed_pages.json` | Runbook v1 and v2 only, used by the console's runbook buttons |
+| `confluence_cli.py` | Runbook commands (`update-runbook`, `restore-runbook`), `read`, `list`, `check` |
+| `page_manifest.json` | Snapshot of the runbook's ID, URL, and version, written by `confluence_cli.py list` |
 
-   The script reads only these values and does not execute the `.env` file as shell code. Environment variables also work and take precedence over `.env` values.
+## Credentials
 
-3. From the repository root, run:
+Confluence is on the same Atlassian site as Jira, so both tools fall back to `JIRA_EMAIL` and `JIRA_API_TOKEN` when `ATLASSIAN_EMAIL` and `ATLASSIAN_API_TOKEN` are not set. Per-person tokens (`JIRA_TOKEN_SHIHAN`, `JIRA_TOKEN_IVAN`, `JIRA_TOKEN_SHELDON`) let pages, comments, and runbook versions show their real authors; without them, the API account (Zhao) writes and the author's name goes into the text. The app reads the spaces in `CONFLUENCE_SPACE_KEYS`.
 
-   ```bash
-   python3 confluence/confluence_cli.py preview
-   python3 confluence/confluence_cli.py check
-   python3 confluence/confluence_cli.py seed
-   ```
-
-`seed` creates only missing titles; running it again does not overwrite edited pages. It writes `confluence/page_manifest.json` with page IDs, URLs, versions, and update times. The manifest contains only the eight scenario pages and can be shared with the retrieval teammate; it contains no token.
-
-Inspect a page as clean text and citation metadata with `python3 confluence/confluence_cli.py read PAGE_ID`. Refresh the manifest with `python3 confluence/confluence_cli.py list`. The manifest is a snapshot of IDs, URLs, and versions; the connector must fetch current content when answering.
-
-## Freshness demo
-
-Keep the runbook at version 1 until the live demo. Then run:
+## Set up and seed
 
 ```bash
-python3 confluence/confluence_cli.py update-runbook
-python3 confluence/confluence_cli.py list
+python3 confluence/demo_spaces.py setup    # create missing spaces, set each person's role, remove "all licensed users"
+python3 confluence/demo_spaces.py seed     # move old pages to the trash, write pages and comments as their authors
+python3 confluence/demo_spaces.py check    # roles per space
+python3 confluence/demo_spaces.py access   # who can read each page, according to Confluence
 ```
 
-The update adds the standby-region failover step and increments the Confluence page version. The retrieval system should observe the new version, update time, and text within its stated sync window. The command updates only the runbook; it never resets the other pages.
+Both commands are safe to rerun: unchanged pages and comment threads are left alone.
 
-After the demo, `python3 confluence/confluence_cli.py restore-runbook` republishes the original text. Confluence cannot delete the current version, so this creates a new version with the original content. Both commands do nothing when the page already shows the target text.
+This site uses **space roles** (`/wiki/api/v2/space-role-mode` returns `ROLES`), so the older per-permission API is refused; `demo_spaces.py` assigns roles through `/wiki/api/v2/spaces/{id}/role-assignments` instead.
 
-## Later permission demo
+Page text avoids the demo questions' words unless the page is meant to answer them (the runbook, the incident response policy, the access request guide, the reconciliation guide). Security pages live in `SECOPS`, so security questions from people outside the security team are refused at space level.
 
-Confluence Free cannot restrict individual pages. The security appendix currently contains fictional content and is visible to all users of this site. After upgrading, restrict it to the security user or group and confirm that the contractor cannot view it. The assistant's retrieval layer must check the actual user's current Confluence access before passing text to the model.
+## Runbook and freshness demo
 
-## API handoff
+```bash
+python3 confluence/confluence_cli.py update-runbook    # v2: adds the approved standby-region failover step (step 11)
+python3 confluence/confluence_cli.py restore-runbook   # back to the v1 text, as a new version
+python3 confluence/confluence_cli.py list              # refresh page_manifest.json
+```
 
-The CLI uses Confluence REST API v2 to look up the `PAYOPS` space, list its pages, fetch page bodies in storage format, create pages, and update the runbook. The retrieval teammate can reuse these calls and should convert storage markup to plain text while retaining `id`, `title`, `url`, `version.number`, and `version.createdAt` for citations and freshness.
+Both are published as the runbook's owner (ShiHan) when `JIRA_TOKEN_SHIHAN` is set, and do nothing when the page already shows the target text. Confluence cannot delete the current version, so restoring creates a new version with the original text.
 
-Documentation: [Confluence page API](https://developer.atlassian.com/cloud/confluence/rest/v2/api-group-page/), [space API](https://developer.atlassian.com/cloud/confluence/rest/v2/api-group-space/), [API tokens](https://support.atlassian.com/atlassian-account/docs/manage-api-tokens-for-your-atlassian-account/).
+## Old pages
+
+The eight pages of the earlier story (INC-PAY-001 described as a past incident, with the old ticket numbers) were moved to the trash on 2026-10-14 and can be restored from the space trash for 30 days. The incident response policy and the reconciliation guide were rewritten in `HANDBOOK` and `FINOPS`.
 
 ## Dummy Confluence → Qwen workflow
 
-The local server already serves `/raid/models/Qwen3.5-27B` as `qwen-spec-poc` at `http://127.0.0.1:8500/v1`. Run:
+`dummy_workflow.py` resolves the runbook's page ID from `page_manifest.json`, fetches the **current** page text, and sends it with a question to the local vLLM endpoint (`VLLM_BASE_URL`, `VLLM_MODEL`). It is a single-page check with no permission gate; the main workflow in `main_workflow/` is the real pipeline.
 
 ```bash
 python3 confluence/dummy_workflow.py --question 'What is the current payment-service recovery procedure?'
 ```
-
-`dummy_workflow.py` resolves the runbook's page ID from `page_manifest.json`, invokes `confluence_cli.py read` to fetch the **current** page text, and sends that text and the question to the running vLLM chat-completions endpoint. The answer includes the Confluence page URL. Use `--slug postmortem` for another page or `--fetch-only` to inspect retrieval without a model call. `VLLM_BASE_URL` and `VLLM_MODEL` can override the defaults.
-
-This is a single-page workflow. It does not yet choose relevant pages, combine platforms, or enforce per-user Confluence permissions. Add a user-specific permission gate before any retrieved text is sent to the model when the site is upgraded for the access-control demo.

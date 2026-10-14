@@ -18,9 +18,9 @@
 - [ ] Confirm the Jira keys, Slack channel, and Drive file title used in `confluence/seed_pages.json` with the source owners
 
 **Accounts and permissions**
-- [ ] Upgrade Confluence and Jira to Standard (trial), so pages and issues can be restricted
-- [ ] Restrict Jira and Confluence to match the Identities table below: all six accounts can currently open everything in Jira `PAY` and Confluence `PAYOPS` (checked 2026-10-13)
-- [ ] Restrict the Confluence security appendix (page 393217) to Ivan and Zhao (Zhao's account is also the system's API account, which must keep read access)
+- [x] Jira and Confluence on paid plans, so pages and issues can be restricted (enforcement checked with each person's own token, 2026-10-14)
+- [x] Restrict Jira (`PAY`, `ACC`, `FIN`) and Confluence (`HANDBOOK`, `PAYOPS`, `FINOPS`, `SECOPS`) to match the Identities table below
+- [ ] Step 6: create Ivan's incident report live in `PAYOPS`, restricted to ShiHan, Zhao, and Ivan (needs the final text)
 - [x] Create demo accounts and fill in `identities.json`: Atlassian account IDs and Google emails for all six users
 - [ ] Slack user IDs in `identities.json` once real Slack exists
 - [ ] `python3 gdrive/gdrive_cli.py share ShiHan Ivan Sheldon`; keep Terrance unshared (Zhao's Google account owns the folder)
@@ -109,7 +109,7 @@ python3 -m main_workflow.cli ask --as ShiHan "What caused the INC-PAY-001 outage
 python3 -m main_workflow.cli chat --as ShiHan          # /as Terrance switches user, /reset clears, /quit leaves
 
 python3 -m main_workflow.cli audit query --as Elson --user ShiHan --container PAYOPS --since 30d
-python3 -m main_workflow.cli audit query --as Elson --doc 393217    # who retrieved this page
+python3 -m main_workflow.cli audit query --as Elson --doc 65887     # who retrieved the runbook page
 python3 -m main_workflow.cli audit verify
 ```
 
@@ -118,7 +118,7 @@ python3 -m main_workflow.cli audit verify
 | File | Purpose |
 |---|---|
 | `sources/base.py` | The interface every platform implements: `search`, `can_access`, `fetch`, `changes_since`. |
-| `sources/confluence.py` | Confluence source. Reuses the client in `confluence/confluence_cli.py` and adds search and a live per-user permission check. |
+| `sources/confluence.py` | Confluence source for the spaces in `CONFLUENCE_SPACE_KEYS` (`HANDBOOK`, `PAYOPS`, `FINOPS`, `SECOPS`). Reuses the client in `confluence/confluence_cli.py` and adds search and a live per-user permission check; each page is labelled with its own space. |
 | `../stand_in_jira_slack/` | Stand-in Jira and Slack sources (`jira-fixture`, `slack-fixture`) until the real ones are ready. See its README. |
 | `sources/gdrive.py` | Google Drive source. Reuses the client in `gdrive/gdrive_cli.py` with the read-only scope. Skipped with a warning until Drive is configured in `.env`. |
 | `gate.py` | Checks each candidate live. A failed check or fetch counts as a denial. Only allowed documents are fetched, and the index is refreshed when it held an older version. |
@@ -182,9 +182,18 @@ rm -f main_workflow/audit.db main_workflow/audit.head
 | Sheldon | finance analyst (payments reconciliation) | Sheldon | reader (to share) | `#payments` only | no |
 | Terrance | external contractor (third-party vendor) | Terrance | never share | `#payments` only | no |
 
-Confluence follows the same split: `PAYOPS` for ShiHan, Zhao, Ivan, and Sheldon; the security appendix for Ivan and Zhao only. Elson reads the audit trail but no source content, and is the only auditor.
+Confluence spaces (space roles, set by `confluence/demo_spaces.py`):
 
-Users without an account on a platform are denied everything there by default. Stand-in access is set in `stand_in_jira_slack/seed.json`, not here. Every user has an Atlassian account and a Google email; Slack user IDs are still empty. On the real platforms, access comes from Jira roles, Confluence space and page permissions, and Drive sharing, which do not match this table yet (see below).
+| Space | ShiHan | Zhao | Ivan | Elson | Sheldon | Terrance |
+|---|---|---|---|---|---|---|
+| `HANDBOOK` Company Handbook | comment | admin | edit | comment | comment | · |
+| `PAYOPS` Payment Operations | edit | admin | edit | comment | · | · |
+| `FINOPS` Finance Operations | · | admin | · | · | edit | · |
+| `SECOPS` Security | · | admin | edit | · | · | · |
+
+Ivan's incident report (created live in step 6) is restricted further to ShiHan, Zhao, and Ivan. Elson can read Jira `PAY` and `ACC` and comment in Confluence but change nothing, and is the only auditor.
+
+Users without an account on a platform are denied everything there by default. Stand-in access is set in `stand_in_jira_slack/seed.json`, not here. Every user has an Atlassian account and a Google email; Slack user IDs are still empty. On the real platforms, access comes from Jira roles, Confluence space roles and page restrictions, and Drive sharing. Jira and Confluence match these tables (checked 2026-10-14); Drive sharing does not yet (see below).
 
 # Current status: stand-ins and gaps
 
@@ -192,11 +201,9 @@ Users without an account on a platform are denied everything there by default. S
 
 | Part | What it really is | To make it real |
 |---|---|---|
-| Jira | Stand-in reading a local JSON file (`stand_in_jira_slack/`) | Build `sources/jira.py`; issue-level security needs Jira Standard |
 | Slack | Stand-in reading a local JSON file (`stand_in_jira_slack/`) | Build `sources/slack.py` with a bot token and real channels |
 | Sign-in | A dropdown stands in for single sign-on | Fine for a hackathon; present it as a trade-off |
 | Zhao | Zhao's account is also the system's API account (site admin, seeded PAYOPS) | Fine for a hackathon because Zhao, the CTO, may see everything; production would use a dedicated non-human service account |
-| Atlassian permissions | All six accounts can open everything in Jira `PAY` and Confluence `PAYOPS` (checked 2026-10-13) | Restrict Jira and Confluence to match the Identities table |
 | Drive users | Zhao's Google account owns the folder; ShiHan, Ivan, and Sheldon are not shared yet | `python3 gdrive/gdrive_cli.py share ShiHan Ivan Sheldon`; never share with Terrance |
 | Slack user IDs | Empty; the stand-ins match users by name | Needed once real Slack exists |
 | Platform console | Simulates platform admins | Correct by design: it represents the platforms, not the chat |
@@ -204,8 +211,8 @@ Users without an account on a platform are denied everything there by default. S
 
 ## Missing: affects the demo
 
-1. **Confluence revocation.** The console has no Confluence access control yet. Every user now has a separate Atlassian account, so this is unblocked.
-2. **The security appendix is not hidden.** ShiHan can see it and has cited it, so scenario 3 currently fails on Confluence. ShiHan now has a separate account; the page restriction is still needed. The API accepted a restriction on a test page, but enforcement against a second account is not proven yet.
+1. **Confluence access in the console.** The console has no Confluence access controls; the demo revokes on Drive, so none are needed. Change space roles with `confluence/demo_spaces.py` or in Confluence.
+2. **Ivan's incident report (step 6).** Created live in `PAYOPS` and restricted to ShiHan, Zhao, and Ivan; the command that creates it needs the final text. Restrictions are enforced (checked 2026-10-14: a restricted test page returned "not found" to ShiHan and Sheldon with their own tokens).
 3. **Real Drive revocation.** ShiHan now has a Google email; share the folder with ShiHan first.
 4. **"Yesterday" in the demo question.** The seed data is dated 2026-09-28. Ask about "INC-PAY-001" instead, or re-date the seed data.
 5. **No automated scenario check in the repo.** The scenarios are checked by hand with the demo flow above.

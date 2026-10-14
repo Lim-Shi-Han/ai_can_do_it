@@ -16,14 +16,15 @@ function fill(id, values, selected) {
 
 async function loadOptions() {
   const o = await api("GET", "/api/console/options");
-  const keep = options ? { su: $("slackUser").value, sc: $("slackChannel").value, ju: $("jiraUser").value, jt: $("jiraTarget").value } : null;
+  const keep = options ? { su: $("slackUser").value, sc: $("slackChannel").value, ju: $("jiraUser").value, jt: $("jiraTarget").value, ji: $("jiraIssue").value } : null;
   options = o;
   fill("slackUser", o.users, keep ? keep.su : "ShiHan");
   fill("slackChannel", o.channels, keep ? keep.sc : "payment-incident-001");
   fill("jiraUser", o.users, keep ? keep.ju : "Terrance");
   fill("jiraTarget", o.jira_targets, keep ? keep.jt : "PAY");
-  fill("jiraIssue", o.issues, "PAY-101");
+  fill("jiraIssue", o.issues, keep ? keep.ji : o.issues[0]);
   fill("jiraStatus", o.statuses, "Done");
+  $("jiraAction").hidden = !o.jira;
   fill("driveUser", o.users, "ShiHan");
   fill("auditUser", o.users, "Elson");
   $("auditors").textContent = o.auditors.join(", ") || "none";
@@ -99,7 +100,7 @@ async function act(button) {
     const r = await api("POST", "/api/console/action", body);
     toast(r.message, r.ok);
     if (action === "reset") lastGrid = {};
-    if (["audit_role", "slack_access", "jira_access", "reset"].includes(action)) await loadOptions();
+    if (["audit_role", "slack_access", "jira_access", "jira_status", "sync_now", "reset"].includes(action)) await loadOptions();
     await Promise.all([loadFeed(), action === "sync_now" ? Promise.resolve() : loadGrid()]);
   } catch (err) {
     toast(err.message, false);

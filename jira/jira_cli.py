@@ -157,6 +157,13 @@ class Jira:
                     continue
                 detail = exc.read(500).decode("utf-8", errors="replace")
                 raise RuntimeError(f"Jira API returned HTTP {exc.code} for {method} {path.split('?')[0]}: {detail}") from exc
+            except (urllib.error.URLError, ConnectionError, TimeoutError):
+                # dropped connections are retried only for reads; retrying a create or comment could duplicate it
+                read_only = method == "GET" or path.startswith("/rest/api/3/permissions/check")
+                if read_only and attempt < 3:
+                    time.sleep(1 + attempt)
+                    continue
+                raise
 
     def me(self):
         if self._me is None:

@@ -14,9 +14,8 @@ def _gdrive():
 
 
 def _jira():
-    # stand-in until sources/jira.py is ready
-    from stand_in_jira_slack.sources import JiraFixtureSource
-    return JiraFixtureSource()
+    from .jira import JiraSource
+    return JiraSource()
 
 
 def _slack():

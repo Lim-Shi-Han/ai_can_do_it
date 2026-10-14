@@ -12,7 +12,7 @@ import threading
 from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
 
-from . import pipeline
+from . import actions, pipeline
 from .audit import AuditLog
 from .index import Index
 from .memory import Memory
@@ -23,6 +23,7 @@ USAGE = "Ask `/brain <question>`, for example `/brain what is the status of INC-
 REMOVED = "_Earlier answers were removed from this chat: their sources changed or are no longer available to you._"
 MEMORIES = {}
 ASK_LOCK = threading.Lock()   # one question at a time, as the local model serves them anyway
+REFRESH_LOCK = threading.Lock()   # a reply fires two events for one thread; refresh it once at a time
 
 
 def linked_user(slack_user_id):
@@ -49,6 +50,39 @@ def to_mrkdwn(question, result):
     return "\n\n".join(lines)
 
 
+def button(action, label, value, **extra):
+    return {"type": "button", "action_id": action, "value": value, "text": {"type": "plain_text", "text": label}, **extra}
+
+
+def draft_blocks(question, draft):
+    based_on = "\n".join(f"• {link(doc)}" for doc in draft.cited) or "No sources"
+    details = "\n".join([
+        f"*Draft {draft.project} ticket.* Nothing is created until you confirm; Jira assigns the number.",
+        "",
+        f"*Summary:* {escape(draft.summary)}",
+        f"*Assignee:* {escape(draft.assignee or 'Unassigned')}",
+        f"*Labels:* {escape(', '.join(draft.labels) or 'None')}",
+        f"*Description:*\n{escape(draft.description)}",
+        f"*Based on:*\n{based_on}",
+    ])
+    return [
+        {"type": "section", "text": {"type": "mrkdwn", "text": f">{escape(question)}"}},
+        {"type": "section", "text": {"type": "mrkdwn", "text": details[:2900]}},   # Slack's limit is 3,000
+        {"type": "actions", "elements": [button("brain_create", "Create in Jira", draft.id, style="primary"),
+                                         button("brain_cancel", "Cancel", draft.id)]},
+    ]
+
+
+def reply_to(question, name, sources):
+    """What /brain sends back: an answer, or a ticket draft the model proposed, for the user to confirm."""
+    memory = MEMORIES.setdefault(name, Memory(name))
+    result = pipeline.run(question, name, sources, AuditLog(), index=Index(), memory=memory, allow_actions=True)
+    if result.draft:
+        return {"text": f"Draft {result.draft.project} ticket: {escape(result.draft.summary)}",
+                "blocks": draft_blocks(question, result.draft)}
+    return {"text": to_mrkdwn(question, result)}
+
+
 def start(sources, log):
     """Connect in the background. log(kind, text, ok=True) feeds the console's activity list."""
     slack, app_token = sources.get("slack"), os.environ.get("SLACK_APP_TOKEN")
@@ -73,11 +107,27 @@ def start(sources, log):
                                             "channel": command["channel_name"]})
         try:
             with ASK_LOCK:
-                memory = MEMORIES.setdefault(name, Memory(name))
-                result = pipeline.run(question, name, sources, AuditLog(), index=Index(), memory=memory)
+                reply = reply_to(question, name, sources)
         except Exception as exc:
             return respond(f"Sorry, I couldn't answer that ({type(exc).__name__}).", response_type="ephemeral")
-        respond(to_mrkdwn(question, result), response_type="ephemeral")
+        respond(response_type="ephemeral", **reply)
+
+    @app.action(re.compile(r"^brain_(create|cancel)$"))
+    def on_draft_decision(ack, body, action, respond):
+        ack()
+        name = linked_user(body["user"]["id"])
+        try:
+            created = actions.confirm(action["value"], name, action["action_id"] == "brain_create", sources,
+                                      AuditLog(), pipeline.load_identities(), Index())
+        except PermissionError as exc:   # expired, someone else's, or no longer allowed
+            return respond(replace_original=True, text=escape(str(exc)))
+        except Exception as exc:
+            return respond(replace_original=True, text=f"Sorry, that failed ({type(exc).__name__}). Nothing was created.")
+        if not created:
+            return respond(replace_original=True, text="Cancelled. Nothing was created.")
+        key, url = created
+        log("action", f"{name} created {key} through the Brain")
+        respond(replace_original=True, text=f"Created <{url}|{key}>.")
 
     @app.event("message")
     def on_message(event):
@@ -85,7 +135,8 @@ def start(sources, log):
         doc_id = thread_id(event["channel"], event.get("message") or event.get("previous_message") or event)
         if doc_id is None:
             return
-        updated, removed = refresh(Index(), slack, doc_id)
+        with REFRESH_LOCK:
+            updated, removed = refresh(Index(), slack, doc_id)
         if updated or removed:
             AuditLog().append("system", "sync", {"source": slack.name, "via": "slack_event",
                                                  "updated": updated, "removed": removed})

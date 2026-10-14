@@ -93,6 +93,11 @@ async function ask() {
 
   try {
     const r = await api("POST", "/api/ask", { question }, session);
+    if (r.draft) {
+      turn.innerHTML = turn.querySelector(".question").outerHTML + renderDraft(r.draft);
+      saveTranscript();
+      return;
+    }
     const banner = r.dropped
       ? `<div class="banner">ⓘ Earlier answers were removed from this chat: their sources changed or are no longer available to you.</div>`
       : "";
@@ -115,6 +120,37 @@ async function ask() {
     $("askBtn").disabled = false;
     $("question").focus();
   }
+}
+
+function renderDraft(d) {
+  const sources = d.sources.map((s) => `<li>${platformChip(s.source)} ${s.url.startsWith("http")
+    ? `<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.title)}</a>` : esc(s.title)}</li>`).join("");
+  return `<div class="answer draft" data-draft="${esc(d.id)}">
+    <div class="draft-head">Draft Jira ticket. Nothing is created until you confirm; Jira assigns the ticket number.</div>
+    <dl>
+      <dt>Project</dt><dd>${esc(d.project)}</dd>
+      <dt>Summary</dt><dd>${esc(d.summary)}</dd>
+      <dt>Assignee</dt><dd>${esc(d.assignee || "Unassigned")}</dd>
+      <dt>Labels</dt><dd>${esc(d.labels.join(", ") || "None")}</dd>
+      <dt>Description</dt><dd class="pre">${esc(d.description)}</dd>
+      <dt>Based on</dt><dd>${sources ? `<ul>${sources}</ul>` : "No sources"}</dd>
+    </dl>
+    <div class="row-actions"><button class="btn primary" data-create="1">Create in Jira</button><button class="btn" data-create="0">Cancel</button></div>
+  </div>`;
+}
+
+async function decideDraft(button) {
+  const card = button.closest(".draft");
+  card.querySelectorAll("button").forEach((b) => (b.disabled = true));
+  let result;
+  try {
+    const r = await api("POST", "/api/action", { draft: card.dataset.draft, create: button.dataset.create === "1" }, session);
+    result = r.url ? `✓ <a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.message)}</a>` : esc(r.message);
+  } catch (err) {
+    result = `<span class="error">${esc(err.message)}</span>`;
+  }
+  card.querySelector(".row-actions").outerHTML = `<div class="draft-result">${result}</div>`;
+  saveTranscript();
 }
 
 function redactTurn(seq) {
@@ -219,6 +255,10 @@ async function init() {
 
   $("user").addEventListener("change", () => startSession($("user").value));
   $("askForm").addEventListener("submit", (e) => { e.preventDefault(); ask(); });
+  $("chat").addEventListener("click", (e) => {
+    const button = e.target.closest(".draft [data-create]");
+    if (button) decideDraft(button);
+  });
   $("resetBtn").addEventListener("click", async () => {
     await api("POST", "/api/reset-chat", {}, session).catch(() => startSession($("user").value));
     turnCount = 0;

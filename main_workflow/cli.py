@@ -2,12 +2,15 @@ import argparse
 import json
 import re
 import sys
+import urllib.error
+import urllib.request
 from datetime import datetime, timedelta, timezone
 
 from . import pipeline
-from .audit import AuditLog
-from .index import Index
+from .audit import DEFAULT_DB as AUDIT_DB, AuditLog
+from .index import DEFAULT_DB as INDEX_DB, Index
 from .memory import Memory
+from .rehearsal import reset_platforms
 from .sources import load_sources
 
 
@@ -120,6 +123,32 @@ def cmd_audit_query(args, audit):
     print(f"{len(rows)} entr{'y' if len(rows) == 1 else 'ies'}")
 
 
+def cmd_reset(args, audit):
+    """Back to the demo's base state. Through the running web server, which also clears every chat; with no
+    server running, directly, and the audit trail and search index are cleared too."""
+    request = urllib.request.Request(
+        f"http://127.0.0.1:{args.port}/api/console/action",
+        data=json.dumps({"action": "reset"}).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=600) as response:
+            result = json.load(response)
+    except urllib.error.HTTPError as exc:
+        sys.exit(f"Reset failed: {exc.read(300).decode('utf-8', errors='replace')}")
+    except urllib.error.URLError:
+        print("No web server running: resetting the platforms directly, then clearing the audit trail and search index.")
+        ok, text = reset_platforms(load_sources())
+        print(text)
+        audit.db.close()
+        for path in (AUDIT_DB, AUDIT_DB.with_suffix(".head"), INDEX_DB):
+            path.unlink(missing_ok=True)
+        sys.exit(0 if ok else 1)
+    print(result["message"])
+    sys.exit(0 if result["ok"] else 1)
+
+
 def main():
     parser = argparse.ArgumentParser(prog="main_workflow")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -132,6 +161,10 @@ def main():
     chat = sub.add_parser("chat")
     chat.add_argument("--as", dest="user", required=True)
     chat.set_defaults(func=cmd_chat)
+
+    reset = sub.add_parser("reset", help="reset Jira and Slack (and every chat, if the web server is running)")
+    reset.add_argument("--port", type=int, default=8090, help="the web server's port")
+    reset.set_defaults(func=cmd_reset)
 
     audit_p = sub.add_parser("audit")
     audit_sub = audit_p.add_subparsers(dest="audit_command", required=True)

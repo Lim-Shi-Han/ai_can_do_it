@@ -8,7 +8,6 @@ Serves the assistant at / and the source platform console at /console.
 import argparse
 import json
 import secrets
-import subprocess
 import sys
 import threading
 import time
@@ -18,23 +17,18 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
-from . import pipeline
+from . import actions, pipeline
 from .audit import AuditLog, now_utc
 from .cli import parse_since
 from .index import Index
 from .memory import Memory
+from .rehearsal import CONFLUENCE_CLI, FIXTURE_CLI, GDRIVE_CLI, JIRA_CLI, SLACK_CLI, reset_platforms, run_cli
 from .sources import load_sources
 from .sync import run_once
 
 ROOT = Path(__file__).resolve().parent
-REPO = ROOT.parent
 STATIC = ROOT / "static"
-FIXTURE_CLI = REPO / "stand_in_jira_slack" / "fixture_cli.py"
-JIRA_CLI = REPO / "jira" / "jira_cli.py"
 JIRA_STATUS_ORDER = ["To Do", "In Progress", "Done"]
-GDRIVE_CLI = REPO / "gdrive" / "gdrive_cli.py"
-CONFLUENCE_CLI = REPO / "confluence" / "confluence_cli.py"
-SLACK_CLI = REPO / "slack_demo" / "slack_cli.py"
 CONTENT_TYPES = {".html": "text/html; charset=utf-8", ".css": "text/css", ".js": "text/javascript"}
 ACCOUNT_KEYS = {"confluence": "atlassian_account_id", "jira": "atlassian_account_id",
                 "gdrive": "google_email", "slack": "slack_user_id"}
@@ -81,9 +75,9 @@ def accounts(user):
     return {name: bool(user.get(ACCOUNT_KEYS[name])) if name in ACCOUNT_KEYS else True for name in SOURCES}
 
 
-def sync_now():
+def sync_now(full=False):
     with SYNC_LOCK:
-        results = run_once(Index(), SOURCES, AuditLog())
+        results = run_once(Index(), SOURCES, AuditLog(), full=full)
     SYNC_STATE["last_run"] = now_utc()
     for r in results:
         if r.get("error"):
@@ -105,13 +99,6 @@ def sync_loop(interval):
         except Exception as exc:
             print(f"sync loop error: {exc}", file=sys.stderr)
         time.sleep(interval)
-
-
-def run_cli(args):
-    done = subprocess.run([sys.executable, *map(str, args)], cwd=REPO, capture_output=True, text=True, timeout=120)
-    if done.returncode == 0:
-        return True, (done.stdout.strip() or "done").splitlines()[0]
-    return False, (done.stderr.strip() or done.stdout.strip() or "failed").splitlines()[-1]
 
 
 def session_for(handler, body=None):
@@ -166,7 +153,9 @@ def api_ask(handler, query, body):
         raise ValueError("Ask a question first.")
     with session["lock"]:
         result = pipeline.run(question, session["user"], SOURCES, AuditLog(), identities(),
-                              Index(), session["memory"])
+                              Index(), session["memory"], allow_actions=True)
+    if result.draft:
+        return {"draft": result.draft.to_dict(), "audit_seq": result.audit_seq}
     return {
         "answer": result.answer,
         "dropped": bool(result.dropped),
@@ -178,6 +167,18 @@ def api_ask(handler, query, body):
             for i, d in result.cited
         ],
     }
+
+
+def api_action(handler, query, body):
+    session = session_for(handler, body)
+    with session["lock"]:
+        created = actions.confirm(body.get("draft"), session["user"], bool(body.get("create")), SOURCES,
+                                  AuditLog(), identities(), Index())
+    if not created:
+        return {"message": "Cancelled. Nothing was created."}
+    key, url = created
+    log_activity("action", f"{session['user']} created {key} through the Brain")
+    return {"message": f"Created {key}", "key": key, "url": url}
 
 
 def api_reset_chat(handler, query, body):
@@ -327,25 +328,14 @@ def api_console_action(handler, query, body):
         changed = sum(len(r.get("updated", [])) + len(r.get("removed", [])) for r in results)
         ok, text = all(not r.get("error") for r in results), f"Sync finished: {changed} change(s)"
     elif action == "reset":
-        ok, text = run_cli([FIXTURE_CLI, "reset"])
-        if "jira" in SOURCES:
-            # roles, statuses, and comments back to the seed; tickets created during a demo need jira_cli.py rebuild
-            jira_ok, jira_text = run_cli([JIRA_CLI, "reset"])
-            ok, text = ok and jira_ok, f"{text}; {jira_text}"
-        if "confluence" in SOURCES:
-            runbook_ok, runbook_text = run_cli([CONFLUENCE_CLI, "restore-runbook"])
-            ok, text = ok and runbook_ok, f"{text}; {runbook_text}"
-        if "slack" in SOURCES:
-            slack_ok, slack_text = run_cli([SLACK_CLI, "reset"])
-            ok, text = ok and slack_ok, f"{text}; {slack_text}"
-        engineer = identities().get("ShiHan", {})
-        if ok and "gdrive" in SOURCES and engineer.get("google_email"):
-            ok, drive_text = run_cli([GDRIVE_CLI, "share", "ShiHan"])
-            text += f"; {drive_text}"
+        ok, text = reset_platforms(SOURCES)
+        sync_now(full=True)   # drop deleted tickets and threads from the index
         with SESSIONS_LOCK:
             CLEARED_SESSIONS.update(SESSIONS)
             SESSIONS.clear()
-        text += "; all chats cleared"
+        if "main_workflow.slack_bot" in sys.modules:   # /brain chats too, if the bot is running
+            sys.modules["main_workflow.slack_bot"].MEMORIES.clear()
+        text += "; index re-synced; all chats cleared"
     else:
         raise ValueError(f"Unknown action {action!r}")
     log_activity(action, text, ok)
@@ -357,6 +347,7 @@ ROUTES = {
     ("POST", "/api/session"): api_session,
     ("GET", "/api/session"): api_session_check,
     ("POST", "/api/ask"): api_ask,
+    ("POST", "/api/action"): api_action,
     ("POST", "/api/reset-chat"): api_reset_chat,
     ("GET", "/api/sync"): api_sync,
     ("GET", "/api/audit"): api_audit,

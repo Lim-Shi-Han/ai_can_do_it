@@ -47,8 +47,8 @@ Tokens are saved straight into `.env`, which Git ignores. Never paste them into 
 
 | Command | What it does |
 |---|---|
-| `reset` | Creates the channels below if missing, sets exactly those members plus the bot, deletes all messages, and posts steps 1–3. The console's **Reset rehearsal** runs this. |
-| `play 5` | Posts a later step's messages (5, 6, 7, or 8) at its point in the demo. |
+| `reset` | Base state: creates the channels below if missing, sets exactly those members plus the bot, and deletes every message, join notices included. Posts nothing. `python -m main_workflow.cli reset` and the console's **Reset rehearsal** run this together with the Jira reset. |
+| `play 1 2 3` | Posts the messages of one or more steps (1–3, 5–8) as the demo reaches them. |
 | `status` | Who is in each demo channel. |
 | `revoke ShiHan payment-incident-001` | Removes a user from a channel. The console's Slack **Remove** button runs this. |
 | `grant ShiHan payment-incident-001` | Adds them back. The console's **Add** button runs this. |

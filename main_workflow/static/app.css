@@ -126,6 +126,9 @@ select, input[type=text], input:not([type]) {
 .section:first-child { border-top: 0; }
 .section h4 { margin: 0 0 4px; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
 .section.confirmed h4 { color: var(--ok); }
+.section.summary { background: var(--panel-2); }
+.section.summary h4 { color: var(--text); }
+.section.summary p { font-weight: 500; }
 .section.provisional h4 { color: var(--warn); }
 .section p { margin: 4px 0; }
 .section ul { margin: 4px 0; padding-left: 20px; }
@@ -191,6 +194,17 @@ table.grid th, table.grid td { padding: 6px 8px; border-bottom: 1px solid var(--
 table.grid th:first-child, table.grid td:first-child { text-align: left; }
 table.grid td:first-child { max-width: 340px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .yes { color: var(--ok); font-weight: 700; }
+table.overview tr.group-row td { text-align: left; font-weight: 700; background: var(--panel-2); padding-top: 8px; }
+table.overview tr.group-row td .meta { font-weight: 400; margin-left: 6px; }
+table.overview td.err { color: var(--warn); font-weight: 400; text-align: left; }
+.lv { display: inline-block; min-width: 54px; padding: 2px 6px; border-radius: 999px; font-size: 11.5px; font-weight: 600; border: 1px solid var(--border); color: var(--muted); }
+.lv.strong { color: var(--accent); border-color: var(--accent); }
+.lv.write { color: var(--ok); border-color: var(--ok); }
+.lv.read { color: var(--text); }
+.lv.none { border-color: transparent; }
+details.docs { margin-top: 12px; border-top: 1px solid var(--border); padding-top: 10px; }
+details.docs summary { cursor: pointer; font-weight: 600; }
+.doc-head { display: flex; gap: 8px; align-items: center; justify-content: flex-end; margin: 8px 0; }
 .no { color: var(--muted); }
 .unk { color: var(--warn); }
 .flash { animation: flash 1.6s ease-out; }

@@ -21,12 +21,20 @@
   <div class="stack">
     <section class="panel">
       <header>
-        <h3>Who can open what (checked live on each platform)</h3>
+        <h3>Access overview (read live from each platform)</h3>
         <span class="spacer"></span>
-        <span class="meta" id="gridChecked"></span>
-        <button class="btn" id="gridRefresh">Refresh</button>
+        <span class="meta" id="overviewChecked"></span>
+        <button class="btn" id="overviewRefresh">Refresh</button>
       </header>
-      <div class="content grid-wrap"><table class="grid" id="grid"><tr><td class="meta">Loading…</td></tr></table></div>
+      <div class="content">
+        <div class="grid-wrap"><table class="grid overview" id="overview"><tr><td class="meta">Loading…</td></tr></table></div>
+        <p class="note">Confluence: space role. Jira: project role (Edit creates and edits tickets). Slack: channel member, can read and post. Drive: folder sharing (Edit can upload). Updates after every change on the right.</p>
+        <details class="docs" id="docDetails">
+          <summary>Document-level access <span class="meta">(checks every indexed document for every person; slower)</span></summary>
+          <div class="doc-head"><span class="meta" id="gridChecked"></span><button class="btn" id="gridRefresh">Refresh documents</button></div>
+          <div class="grid-wrap"><table class="grid" id="grid"></table></div>
+        </details>
+      </div>
     </section>
 
     <section class="panel">
@@ -74,7 +82,7 @@
             <button class="btn" data-act="drive_upload" data-step="7" data-owner="Terrance">Step 7: Terrance uploads the settlement export</button>
             <button class="btn" data-act="drive_upload" data-step="7" data-owner="Sheldon">Step 7: Sheldon's payment records copy</button>
           </div>
-          <div class="note"><code>Company A/Vendors/PayProcessor/INC-PAY-001 shared with PayProcessor</code>. Uploads use each person's own Google sign-in (<code>gdrive/SETUP.md</code>), so Drive refuses Terrance's upload until he is shared as Editor. Zhao uploads Sheldon's file until Sheldon can sign in. Press Sync now after an upload.</div>
+          <div class="note"><code>Company A/Vendors/PayProcessor/INC-PAY-001 shared with PayProcessor</code>. Uploads use each person's own Google sign-in (<code>gdrive/SETUP.md</code>), so Drive refuses Terrance's upload until he is shared as Editor. Press Sync now after an upload.</div>
         </div>
         <div class="action">
           <h4><span class="chip p-confluence"><span class="dot"></span>Confluence</span> PAYOPS space</h4>

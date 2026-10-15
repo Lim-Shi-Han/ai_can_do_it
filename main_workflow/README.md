@@ -24,7 +24,7 @@
 - [x] Create demo accounts and fill in `identities.json`: Atlassian account IDs and Google emails for all six users
 - [ ] Slack user IDs in `identities.json` once real Slack exists
 - [x] Drive folders, sharing, and files by their owners (`gdrive/demo_drive.py seed`); matches the Drive table below (checked 2026-10-14). Terrance is shared only from step 3 to step 8
-- [ ] A Google account that can sign in for Sheldon; until then Zhao uploads his Drive files (`gdrive/SETUP.md`)
+- [x] A Google account that can sign in for Sheldon; his Drive files are uploaded as him (`gdrive/SETUP.md`)
 - [x] Console Drive card: **Share** with a role (Terrance needs Editor to upload in step 3) and the three demo upload buttons
 - [x] Re-map ShiHan from the seeding account to a separate Atlassian account
 
@@ -267,7 +267,7 @@ rm -f main_workflow/audit.db main_workflow/audit.head
 | Zhao | CTO | Zhao Heng: site admin, also the system's API account | yes, owns the Drive folders | both channels | no |
 | Ivan | security engineer | Ivan | yes | both channels | no |
 | Elson | compliance officer | Elson Chan Chong Jun | none | none | yes |
-| Sheldon | finance analyst (payments reconciliation) | Sheldon | yes, but cannot sign in yet | `#payments` only | no |
+| Sheldon | finance analyst (payments reconciliation) | Sheldon | yes | `#payments` only | no |
 | Terrance | external contractor (third-party vendor) | Terrance | yes | `#payments` only | no |
 
 Jira project roles are listed in `docs/DEMO_PLAN.md`.
@@ -304,7 +304,6 @@ Users without an account on a platform are denied everything there by default. S
 | Slack | Stand-in reading a local JSON file (`stand_in_jira_slack/`) | Build `sources/slack.py` with a bot token and real channels |
 | Sign-in | A dropdown stands in for single sign-on | Fine for a hackathon; present it as a trade-off |
 | Zhao | Zhao's account is also the system's API account (site admin, seeded PAYOPS) | Fine for a hackathon because Zhao, the CTO, may see everything; production would use a dedicated non-human service account |
-| Sheldon's Drive uploads | Zhao uploads Sheldon's files, because Sheldon's Google account cannot sign in yet | A Google account for Sheldon, then `gdrive/demo_drive.py seed --fix-owners` (see `gdrive/SETUP.md`) |
 | Slack user IDs | Empty; the stand-ins match users by name | Needed once real Slack exists |
 | Platform console | Simulates platform admins | Correct by design: it represents the platforms, not the chat |
 | Stand-in citation links | `fixture://…`, not clickable | Real sources return real URLs |

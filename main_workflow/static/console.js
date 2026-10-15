@@ -1,5 +1,43 @@
 const $ = (id) => document.getElementById(id);
 let lastGrid = {};
+let lastOverview = {};
+
+const LEVEL_CLASS = { Admin: "strong", Owner: "strong", Auditor: "strong", Edit: "write", Member: "write", Comment: "read", View: "read" };
+
+async function loadOverview() {
+  $("overviewRefresh").disabled = true;
+  $("overviewChecked").textContent = "checking…";
+  try {
+    const o = await api("GET", "/api/console/overview");
+    const head = `<tr><th>Source</th>${o.users.map((u) => `<th>${esc(u)}</th>`).join("")}</tr>`;
+    const body = o.groups.map((g) => {
+      const title = `<tr class="group-row"><td colspan="${o.users.length + 1}"><span class="p-${esc(g.source)}"><span class="dot"></span></span> ${esc(g.label)}${g.error ? `<span class="meta">could not read: ${esc(g.error)}</span>` : ""}</td></tr>`;
+      const rows = g.rows.map((r) => {
+        const cells = o.users.map((u) => {
+          const v = r.cells[u] || "";
+          const key = `${g.source}|${r.path || r.name}|${u}`;
+          const changed = key in lastOverview && lastOverview[key] !== v;
+          lastOverview[key] = v;
+          return `<td class="${changed ? "flash" : ""}"><span class="lv ${v ? LEVEL_CLASS[v] || "read" : "none"}">${v ? esc(v) : "·"}</span></td>`;
+        }).join("");
+        const indent = r.depth ? `style="padding-left:${8 + r.depth * 14}px"` : "";
+        return `<tr><td ${indent} title="${esc(r.path || r.name)}">${esc(r.name)}</td>${cells}</tr>`;
+      }).join("");
+      return title + rows;
+    }).join("");
+    $("overview").innerHTML = head + body;
+    $("overviewChecked").textContent = `checked ${clock(o.checked_at)}`;
+  } catch (err) {
+    $("overviewChecked").textContent = err.message;
+  } finally {
+    $("overviewRefresh").disabled = false;
+  }
+}
+
+function refreshAccess() {
+  // the document grid is slow, so it only reloads while it is open
+  return Promise.all([loadOverview(), $("docDetails").open ? loadGrid() : Promise.resolve()]);
+}
 let options = null;
 
 function showMembers() {
@@ -101,9 +139,9 @@ async function act(button) {
   try {
     const r = await api("POST", "/api/console/action", body);
     toast(r.message, r.ok);
-    if (action === "reset") lastGrid = {};
+    if (action === "reset") { lastGrid = {}; lastOverview = {}; }
     if (["audit_role", "slack_access", "jira_access", "jira_status", "sync_now", "reset"].includes(action)) await loadOptions();
-    await Promise.all([loadFeed(), action === "sync_now" ? Promise.resolve() : loadGrid()]);
+    await Promise.all([loadFeed(), action === "sync_now" ? Promise.resolve() : refreshAccess()]);
   } catch (err) {
     toast(err.message, false);
   } finally {
@@ -113,9 +151,11 @@ async function act(button) {
 
 document.querySelectorAll("[data-act]").forEach((b) => b.addEventListener("click", () => act(b)));
 $("gridRefresh").addEventListener("click", loadGrid);
+$("overviewRefresh").addEventListener("click", loadOverview);
+$("docDetails").addEventListener("toggle", () => { if ($("docDetails").open && !$("grid").rows.length) loadGrid(); });
 $("slackChannel").addEventListener("change", showMembers);
 $("jiraTarget").addEventListener("change", showMembers);
 
-loadOptions().then(loadGrid);
+loadOptions().then(loadOverview);
 loadFeed();
 setInterval(loadFeed, 3000);

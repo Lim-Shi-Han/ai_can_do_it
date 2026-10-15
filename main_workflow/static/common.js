@@ -46,7 +46,7 @@ function platformChip(source, extra = "") {
   return `<span class="chip p-${esc(source)}"><span class="dot"></span>${esc(p.label)}${p.standIn ? ' <span class="tag">stand-in</span>' : ""}${extra}</span>`;
 }
 
-const SECTION_RE = /^\s*(?:#{1,6}\s*)?\**\s*(confirmed|unconfirmed or provisional|unconfirmed|provisional|missing)\s*\**\s*:?\s*$/i;
+const SECTION_RE = /^\s*(?:#{1,6}\s*)?\**\s*(answer|confirmed|unconfirmed or provisional|unconfirmed|provisional|missing)\s*\**\s*:?\s*$/i;
 
 function inline(text, turnId) {
   return esc(text)
@@ -83,7 +83,8 @@ function renderAnswer(answer, turnId) {
       if (line) html += `<p>${inline(line.replace(/^#+\s*/, ""), turnId)}</p>`;
     }
     if (inList) html += "</ul>";
-    const key = name.toLowerCase().startsWith("confirmed") ? "confirmed" : name.toLowerCase().startsWith("missing") ? "missing" : name ? "provisional" : "";
+    const lower = name.toLowerCase();
+    const key = lower === "answer" ? "summary" : lower.startsWith("confirmed") ? "confirmed" : lower.startsWith("missing") ? "missing" : name ? "provisional" : "";
     return `<div class="section ${key}">${name ? `<h4>${esc(name)}</h4>` : ""}${html}</div>`;
   }).join("");
 }

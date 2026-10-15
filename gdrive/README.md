@@ -70,7 +70,7 @@ When it prints a new `GDRIVE_FOLDER_ID`, put that in `.env`. Files are Word and 
 
 `seed` also removes people's direct access to `Company A` (a share there would reach every folder) and leaves files someone else uploaded alone; `seed --fix-owners` has the right owner upload their own copy and moves the other copy to its owner's trash. `check` also compares every folder's sharing with the table above.
 
-**Sheldon** cannot sign in yet (his Google account is not verified), so `uploaded_by` in `demo_drive.json` has Zhao upload Sheldon's files, including the step 7 payment records. Sheldon keeps his own access. Once he can sign in: `login Sheldon`, remove the entry, and run `seed --fix-owners`.
+**Sheldon** uploads his own files, including the step 7 payment records, with his sign-in (`britanniagbr@gmail.com`). If a persona loses their sign-in, `uploaded_by` in `demo_drive.json` can name someone to upload for them; see `SETUP.md`.
 
 **Without sign-ins**, people upload by hand instead: `build` writes the files into `gdrive/upload/` with `HOW TO UPLOAD.txt`; Zhao uploads the `Company A` folder and shares it with the service account; `setup` shares the folders; the others drag their files in; `setup` and `check` again.
 

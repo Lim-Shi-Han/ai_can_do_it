@@ -20,7 +20,7 @@ Ask Shi Han for these. They must be sent privately (a direct message or a passwo
 |---|---|---|
 | Robot key | `gdrive/service_account.json` | |
 | Sign-in client | `gdrive/oauth_client.json` | |
-| Persona sign-ins | `gdrive/tokens/Zhao.json`, `ShiHan.json`, `Ivan.json`, `Terrance.json` | Each one gives full access to that persona's Google Drive. Sheldon has none yet (see below) |
+| Persona sign-ins | `gdrive/tokens/Zhao.json`, `ShiHan.json`, `Ivan.json`, `Terrance.json`, `Sheldon.json` | Each one gives full access to that persona's Google Drive |
 | Identities | `main_workflow/identities.json` | Holds the real email addresses, including each persona's `google_email` |
 
 Then add these two lines to `.env` in the repository root (see `.env.example`):
@@ -61,7 +61,7 @@ Before step 3 of the demo, `check --as Terrance` says the folder is not shared w
 python gdrive/gdrive_cli.py share Terrance --role editor   # step 3: Zhao gives the processor access
 python gdrive/demo_drive.py upload 3                       # step 3: Terrance uploads the timeout log
 python gdrive/demo_drive.py upload 7 Terrance              # step 7: the processor's settlement export
-python gdrive/demo_drive.py upload 7 Sheldon               # step 7: Company A's payment records (uploaded by Zhao for now)
+python gdrive/demo_drive.py upload 7 Sheldon               # step 7: Company A's payment records, uploaded by Sheldon
 python gdrive/gdrive_cli.py unshare Terrance               # step 8: access removed
 ```
 
@@ -89,12 +89,12 @@ To renew on your own machine, you need the persona's Google password, and the ac
 
 ## Sheldon
 
-Sheldon's Google account cannot sign in yet, so `uploaded_by` in `gdrive/demo_drive.json` has Zhao upload his files. Drive shows Zhao as their owner; Sheldon still has his own access, so the chat's checks for him are unaffected. When Sheldon has a working account:
+Sheldon signs in with `britanniagbr@gmail.com` (his `google_email` in `identities.json`), and his files are uploaded as him. If a persona ever loses their sign-in, `uploaded_by` in `gdrive/demo_drive.json` can name someone to upload for them (Drive then shows that person as the owner). To switch back once the persona can sign in again:
 
-1. Put its address in `google_email` for Sheldon in `main_workflow/identities.json`, and add it as a test user (below).
-2. `python gdrive/gdrive_cli.py login Sheldon`
-3. Remove the `Sheldon` entry from `uploaded_by` in `gdrive/demo_drive.json`.
-4. `python gdrive/demo_drive.py seed --fix-owners`: Sheldon uploads his own copies, and Zhao's copies go to Zhao's trash.
+1. Put the account's address in `google_email` in `main_workflow/identities.json`, and add it as a test user (below).
+2. `python gdrive/gdrive_cli.py login <Name>`
+3. Remove that person's entry from `uploaded_by` in `gdrive/demo_drive.json`.
+4. `python gdrive/demo_drive.py seed --fix-owners`: the owner uploads their own copies, and the stand-in's copies go to the stand-in's trash.
 5. `python gdrive/demo_drive.py check`: it also lists the old account if it can still open a folder.
 
 ## The Google Cloud side

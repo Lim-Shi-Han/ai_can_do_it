@@ -262,6 +262,94 @@ def api_console_grid(handler, query, body):
     return {"users": [u["name"] for u in people], "rows": rows, "checked_at": now_utc()}
 
 
+def overview_confluence(people):
+    """Each space's role per person, from Confluence's own role assignments."""
+    from confluence.demo_spaces import Confluence as Spaces, load_seed
+    spaces = Spaces(SOURCES["confluence"].api)
+    role_names = {v: k for k, v in spaces.roles().items()}
+    level_of = {name: level.capitalize() for level, name in load_seed()["levels"].items()}
+    names = {u.get("atlassian_account_id"): n for n, u in people.items() if u.get("atlassian_account_id")}
+    rows = []
+    for space_id, key in SOURCES["confluence"].space_by_id.items():
+        cells = {}
+        for (ptype, pid), role in spaces.role_assignments(space_id).items():
+            if ptype == "USER" and pid in names:
+                name = role_names.get(role, "")
+                cells[names[pid]] = level_of.get(name, name or "Role")
+        rows.append({"name": key, "cells": cells})
+    return rows
+
+
+def overview_jira(people):
+    """Project roles per person, plus the PAY Security level, from Jira's own role lists."""
+    from jira.jira_cli import load_seed
+    api, targets = SOURCES["jira"].api, load_seed()["targets"]
+    roles = api.global_roles()
+    names = {u.get("atlassian_account_id"): n for n, u in people.items() if u.get("atlassian_account_id")}
+    # strongest role first, so a person in several roles shows the highest one
+    project_roles = [("Administrators", "Admin"), ("Member", "Edit"), ("Viewer", "View")]
+    rows = []
+    for target, (key, role) in targets.items():
+        shown = project_roles if role == "Member" else [(role, "Member")]
+        cells = {}
+        for role_name, label in shown:
+            if role_name in roles:
+                for account in api.role_users(key, roles[role_name]):
+                    if account in names:
+                        cells.setdefault(names[account], label)
+        rows.append({"name": key if role == "Member" else f"{key} {role} level", "cells": cells})
+    return rows
+
+
+def overview_slack(people):
+    return [{"name": f"#{channel}", "cells": {n: "Member" for n in members}}
+            for channel, members in slack_members().items()]
+
+
+def overview_drive(people):
+    """Each folder's sharing per person, from Drive's own permission lists."""
+    from gdrive.demo_drive import load_spec, people as drive_people, resolve
+    spec, names = load_spec(), drive_people()
+    robot = SOURCES["gdrive"].api
+    folders, _ = resolve(robot, spec, names)
+    labels = {"owner": "Owner", "writer": "Edit", "commenter": "Comment", "reader": "View"}
+    rows = []
+    for entry in spec["folders"]:
+        folder = folders.get(entry["path"])
+        if folder is None:
+            continue
+        cells = {}
+        for p in robot.permissions(folder["id"]):
+            n = names.get((p.get("emailAddress") or "").lower())
+            if n:
+                cells[n] = labels.get(p["role"], p["role"])
+        rows.append({"name": entry["path"].rpartition("/")[2], "path": entry["path"],
+                     "depth": entry["path"].count("/"), "cells": cells})
+    return rows
+
+
+def api_console_overview(handler, query, body):
+    """Per-source rights per person, read live from each platform, so console changes show up straight away."""
+    people = identities()
+    readers = {"confluence": ("Confluence", overview_confluence), "jira": ("Jira", overview_jira),
+               "slack": ("Slack", overview_slack), "gdrive": ("Drive", overview_drive)}
+    wanted = [(key, label, fn) for key, (label, fn) in readers.items()
+              if key in SOURCES or (key == "slack" and "slack-fixture" in SOURCES)]
+
+    def read(item):
+        key, label, fn = item
+        try:
+            return {"source": key, "label": label, "rows": fn(people)}
+        except Exception as exc:
+            return {"source": key, "label": label, "rows": [], "error": f"{type(exc).__name__}: {str(exc)[:160]}"}
+
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        groups = list(pool.map(read, wanted))
+    groups.append({"source": "audit", "label": "Chat", "rows": [
+        {"name": "Audit trail", "cells": {n: "Auditor" for n, u in people.items() if u.get("can_audit")}}]})
+    return {"users": list(people), "groups": groups, "checked_at": now_utc()}
+
+
 def jira_console_options():
     """Targets, members, tickets, and statuses from real Jira, read live like everything else in the console."""
     from jira.jira_cli import load_seed
@@ -385,6 +473,7 @@ ROUTES = {
     ("GET", "/api/audit"): api_audit,
     ("POST", "/api/audit/verify"): api_audit_verify,
     ("GET", "/api/console/grid"): api_console_grid,
+    ("GET", "/api/console/overview"): api_console_overview,
     ("GET", "/api/console/options"): api_console_options,
     ("GET", "/api/console/feed"): api_console_feed,
     ("POST", "/api/console/action"): api_console_action,

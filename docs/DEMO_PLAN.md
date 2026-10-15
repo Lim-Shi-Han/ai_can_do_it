@@ -132,7 +132,7 @@ python gdrive/demo_drive.py upload 3                       # Terrance uploads wi
 - **Action:** Terrance uploads the **settlement export** (`demo_drive.py upload 7 Terrance`), presses **Sync now**, and asks: *"Reconcile the failed payments for INC-PAY-001."* The answer reconciles only the processor's side (1,312 failed with no answer, none settled; the processor cannot tell which later payments were retries) and lists Company A's payment records as **missing**. Terrance asks Sheldon in `#vendor-payprocessor`; Sheldon shares a copy of Company A's payment records made for the processor (`demo_drive.py upload 7 Sheldon`), replies, and tracks the work in **FIN-21**. Press **Sync now**. Terrance asks again.
 - **Expected:** the processor's two files and Company A's copy are found, and the answer gives the reconciliation: **1,312 timed-out attempts, 214 retried successfully, no duplicate charges** (87 late approvals had their card holds released).
 - **Shows:** a file added minutes ago changes the answer within one sync (60 s).
-- **Note:** Sheldon's Google account cannot sign in yet, so Zhao uploads his copy and Drive shows Zhao as its owner (`uploaded_by` in `gdrive/demo_drive.json`).
+- **Note:** Sheldon uploads his copy with his own Google sign-in, so Drive shows Sheldon as its owner.
 
 ### 8. Case closed, access removed (scenario 4)
 - **Action:** with PAY-100 and FIN-21 closed, Zhao notices the processor can still open Company A's payment records: *"the processor doesn't need our folder any more."* Sheldon **unshares** Terrance (`python gdrive/gdrive_cli.py unshare Terrance`, or console: Drive **Unshare**) and closes ACC-41 ("access revoked, case closed"). Terrance asks a follow-up in the same chat.
@@ -171,7 +171,7 @@ python -m main_workflow.cli audit verify
 | Slack: `#vendor-payprocessor` (shared) and `#payment-incident-001`, the step messages | Slack | ⬜ |
 | Drive: `Company A` folders and sharing as above, 15 standing files by their owners, the old metrics report removed | Drive | ✅ Done |
 | Drive: the three demo files (timeout log, settlement export, payment records copy), uploaded as their owners by `demo_drive.py upload`; steps 3 to 9 rehearsed on the real Drive (gate only, no LLM) | Drive | ✅ Done |
-| Drive: a Google account that can sign in for Sheldon (until then Zhao uploads his files) | Drive | ⬜ |
+| Drive: a Google account that can sign in for Sheldon, and his files uploaded as him | Drive | ✅ Done |
 | Console: Drive **Share** with a role, the three demo upload buttons, and the step 6 report button | — | ✅ Done |
 | Local run: Drive files from Shi Han (`gdrive/SETUP.md`); the LLM endpoint (see below) | Whoever demos | ⬜ |
 | Five worked examples with screenshots from a full rehearsal | Team | ⬜ by 16 Oct |

@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- Copy of https://claude.ai/artifact/2MVNKs9NNKxRLNX1ptHMFB (version 6) -->
+<title>INC-PAY-001 Run Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@600;700&display=swap">
+<style>
+/* Layout: a single run-sheet column; prep as numbered checklists, the live run as one scannable table grouped by scenario */
+:root {
+  --bg: #f4f6f7;
+  --paper: #ffffff;
+  --ink: #17232b;
+  --muted: #5a6b75;
+  --line: #d9e1e5;
+  --accent: #0b6e75;
+  --accent-soft: #e0f0f0;
+  --code-bg: #eef2f4;
+  --code-ink: #1b3440;
+  --warn: #8a5300;
+  --warn-soft: #fff3dc;
+  --s1: #2b5fb8; --s2: #0b7a52; --s3: #a23a6a; --s4: #b2531a; --s5: #6a4bb0;
+  --font-display: "IBM Plex Sans Condensed", "Arial Narrow", "Helvetica Neue", sans-serif;
+  --font-body: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #10171b; --paper: #172127; --ink: #e4ecef; --muted: #98aab3; --line: #2a3a42;
+    --accent: #5cc5cc; --accent-soft: #15353a; --code-bg: #0d1418; --code-ink: #cfe3e8;
+    --warn: #f0c070; --warn-soft: #2e2512;
+    --s1: #7aa6f0; --s2: #5fd0a2; --s3: #e48ab4; --s4: #f0a070; --s5: #b9a2f2;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #10171b; --paper: #172127; --ink: #e4ecef; --muted: #98aab3; --line: #2a3a42;
+  --accent: #5cc5cc; --accent-soft: #15353a; --code-bg: #0d1418; --code-ink: #cfe3e8;
+  --warn: #f0c070; --warn-soft: #2e2512;
+  --s1: #7aa6f0; --s2: #5fd0a2; --s3: #e48ab4; --s4: #f0a070; --s5: #b9a2f2;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.55 var(--font-body); }
+.wrap { max-width: 1080px; margin: 0 auto; padding-inline: 20px; padding-block: 32px 64px; display: grid; gap: 28px; }
+header { display: grid; gap: 6px; }
+.eyebrow { font: 600 12px/1 var(--font-body); letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+h1 { font: 700 clamp(28px, 4vw, 40px)/1.1 var(--font-display); margin: 0; text-wrap: balance; letter-spacing: -.01em; }
+.lede { color: var(--muted); margin: 0; max-width: 68ch; }
+h2 { font: 700 22px/1.2 var(--font-display); margin: 0; display: flex; align-items: baseline; gap: 10px; }
+h2 .part { font: 600 12px/1 var(--font-mono); color: var(--accent); background: var(--accent-soft); padding: 4px 7px; border-radius: 4px; }
+section { background: var(--paper); border: 1px solid var(--line); border-radius: 8px; padding: 22px; display: grid; gap: 16px; min-width: 0; }
+.note { color: var(--muted); margin: 0; max-width: 72ch; }
+.warn { background: var(--warn-soft); color: var(--warn); border-radius: 6px; padding: 10px 14px; margin: 0; font-size: 14px; }
+ol.steps { margin: 0; padding: 0; list-style: none; counter-reset: s; display: grid; gap: 14px; }
+ol.steps > li { counter-increment: s; display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 10px; }
+ol.steps > li::before { content: counter(s); font: 600 13px/26px var(--font-mono); text-align: center; width: 26px; height: 26px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); }
+.step-body { display: grid; gap: 8px; min-width: 0; }
+.step-body p { margin: 0; }
+.cmd { display: flex; align-items: stretch; background: var(--code-bg); border-radius: 6px; min-width: 0; }
+.cmd pre { margin: 0; padding: 10px 12px; overflow-x: auto; flex: 1; min-width: 0; font: 13px/1.6 var(--font-mono); color: var(--code-ink); }
+.cmd button { border: 0; border-left: 1px solid var(--line); background: transparent; color: var(--muted); font: 500 12px var(--font-body); padding: 0 12px; cursor: pointer; border-radius: 0 6px 6px 0; }
+.cmd button:hover, .cmd button:focus-visible { color: var(--accent); }
+.cmd button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+code { font: 13px var(--font-mono); background: var(--code-bg); color: var(--code-ink); padding: 1px 5px; border-radius: 4px; }
+.checks { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; margin: 0; padding: 0; list-style: none; }
+.checks li { border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; font-size: 14px; }
+.checks b { display: block; font-weight: 600; }
+.table-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 6px; }
+table { border-collapse: collapse; width: 100%; min-width: 760px; font-size: 14px; }
+th, td { text-align: left; vertical-align: top; padding: 9px 12px; border-bottom: 1px solid var(--line); }
+thead th { font: 600 12px/1.2 var(--font-body); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); background: var(--code-bg); }
+td.num { font: 500 13px var(--font-mono); color: var(--muted); width: 38px; font-variant-numeric: tabular-nums; }
+td.where { white-space: nowrap; font-weight: 600; width: 150px; }
+td.expect { color: var(--muted); }
+tr.group td { background: var(--paper); font: 700 15px/1.3 var(--font-display); padding-top: 16px; border-bottom: 2px solid var(--line); }
+tr:last-child td { border-bottom: 0; }
+.say { font-style: italic; }
+.tk { font-family: var(--font-mono); font-weight: 600; color: var(--accent); }
+.chip { display: inline-block; font: 600 11px/1 var(--font-body); letter-spacing: .04em; text-transform: uppercase; padding: 4px 7px; border-radius: 999px; border: 1px solid currentColor; margin-right: 6px; vertical-align: 2px; }
+.c1 { color: var(--s1); } .c2 { color: var(--s2); } .c3 { color: var(--s3); } .c4 { color: var(--s4); } .c5 { color: var(--s5); }
+.order { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font: 600 13px var(--font-mono); }
+.order span { background: var(--accent-soft); color: var(--accent); padding: 4px 8px; border-radius: 4px; }
+.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+.two > div { display: grid; gap: 10px; align-content: start; min-width: 0; }
+h3 { font: 600 15px/1.3 var(--font-body); margin: 0; }
+dl { margin: 0; display: grid; gap: 8px; }
+dt { font-weight: 600; }
+dd { margin: 0; color: var(--muted); }
+.pill { display: inline-block; font: 600 11px/1 var(--font-body); letter-spacing: .04em; text-transform: uppercase; padding: 4px 8px; border-radius: 999px; white-space: nowrap; }
+.pill.todo { background: var(--warn-soft); color: var(--warn); }
+.pill.doing { background: var(--accent-soft); color: var(--accent); }
+.pill.done { background: var(--code-bg); color: var(--s2); }
+td.status { width: 120px; }
+h3.sub { font: 700 15px/1.3 var(--font-display); margin: 4px 0 0; }
+@media (max-width: 520px) { section { padding: 16px; } .wrap { padding-inline: 16px; } }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+
+<div class="wrap">
+  <header>
+    <span class="eyebrow">FinTech track · Corporate Chat with Dynamic Access</span>
+    <h1>INC-PAY-001 Run Sheet</h1>
+    <p class="lede">How to run the payment-outage demo on the DGX, from a clean reset to the audit check. About 10 minutes to prepare and 20–25 minutes to run. Based on Shi Han's handbook and <code>docs/DEMO_PLAN.md</code> on the <code>feat/slack-integration</code> branch.</p>
+  </header>
+
+  <section aria-labelledby="status">
+    <h2 id="status"><span class="part">Status</span>Submission status, 15 Oct</h2>
+    <p class="warn">Submission is due 16 Oct 2026. Demo Day for the top two teams is 3 Nov 2026 (to be confirmed).</p>
+    <h3 class="sub">Deliverables</h3>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Deliverable</th><th>Status</th><th>What is left</th></tr></thead>
+        <tbody>
+          <tr><td>CodeBuddy or WorkBuddy chat screenshots (at least 3)</td><td class="status"><span class="pill todo">Not started</span></td><td class="expect">Required for scoring. Nothing collected yet</td></tr>
+          <tr><td>Five worked examples with screenshots</td><td class="status"><span class="pill todo">Not started</span></td><td class="expect">Needs one full rehearsal with the latest fixes; capture each scenario's question, answer and audit entry</td></tr>
+          <tr><td>Architecture and trust-boundary diagram</td><td class="status"><span class="pill todo">Not started</span></td><td class="expect">Sources, permission gate, search index, model, audit trail, Slack bot, console</td></tr>
+          <tr><td>Presentation deck</td><td class="status"><span class="pill todo">Not started</span></td><td class="expect">Open by naming FinTech / Aspire: The Internal Brain as the chosen case</td></tr>
+          <tr><td>Live demo walkthrough or video</td><td class="status"><span class="pill doing">In progress</span></td><td class="expect">Run sheet and Slack recording guide ready; no full recording yet</td></tr>
+          <tr><td>Source code on GitHub</td><td class="status"><span class="pill doing">In progress</span></td><td class="expect"><code>feat/slack-integration</code> is 6 commits ahead of <code>main</code> and not merged; the DGX fixes below are not committed</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h3 class="sub">Repo and setup</h3>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Item</th><th>Status</th><th>What is left</th></tr></thead>
+        <tbody>
+          <tr><td>Fixes made on the DGX (last section)</td><td class="status"><span class="pill todo">Uncommitted</span></td><td class="expect">Commit and push once the team agrees; the DGX demo depends on them</td></tr>
+          <tr><td><code>jira/issue_manifest.json</code>, <code>confluence/page_manifest.json</code></td><td class="status"><span class="pill todo">Decide</span></td><td class="expect">Rewritten by the resets; snapshots only, so commit or discard with the team</td></tr>
+          <tr><td>Sheldon's Drive sign-in for teammates</td><td class="status"><span class="pill todo">To share</span></td><td class="expect">Anyone else running the demo needs <code>gdrive/tokens/Sheldon.json</code> (sent privately) and Sheldon's new <code>google_email</code> in their <code>identities.json</code></td></tr>
+          <tr><td>Docs that contradict the current state</td><td class="status"><span class="pill todo">To fix</span></td><td class="expect"><code>main_workflow/README.md</code> still lists Slack as a stand-in; <code>docs/DEMO_PLAN.md</code> has three items marked open that are done or obsolete</td></tr>
+          <tr><td>Ivan's role</td><td class="status"><span class="pill todo">To fix</span></td><td class="expect">"security engineer" in <code>identities.json</code> and <code>identities.example.json</code>; the story makes him the security manager</td></tr>
+          <tr><td>Sign-in is a dropdown that switches person</td><td class="status"><span class="pill todo">Check with team</span></td><td class="expect">The chat's "Demo sign-in" only stands in for single sign-on. Agree with the team whether to keep it (and present it as a trade-off) or add a real sign-in before the submission</td></tr>
+          <tr><td>Console access panel was too detailed</td><td class="status"><span class="pill done">Done</span></td><td class="expect">Replaced by a per-source access overview (role per space, project, channel and folder), read live and refreshed after every change on the right; the per-document grid is now collapsed. Not committed</td></tr>
+          <tr><td><code>incident_demo_flow.png</code></td><td class="status"><span class="pill done">Done</span></td><td class="expect">Regenerated with the team's ticket keys (ACC-41, FIN-21, PAY-102 to PAY-104); not committed</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h3 class="sub">Demo-day risks</h3>
+    <ul class="checks">
+      <li><b>Which machine presents</b>Teammates use DeepSeek on port 8038; the DGX uses Qwen on 8500. Answers differ in wording, so rehearse on the presenting machine.</li>
+      <li><b>One server at a time</b>Otherwise Slack's <code>/brain</code> can reach the wrong machine.</li>
+      <li><b>Terrance in Slack</b>Nobody is signed in to Slack as Terrance yet; he asks in the web chat instead.</li>
+      <li><b>Sign-ins expire</b>Google sign-ins last 7 days; re-check all five before Demo Day. Start the Jira reset 30 minutes before presenting.</li>
+    </ul>
+  </section>
+
+  <section aria-labelledby="ready">
+    <h2 id="ready"><span class="part">Check</span>Before you start</h2>
+    <ul class="checks">
+      <li><b>Google sign-ins</b>Zhao, ShiHan, Ivan, Terrance and Sheldon in <code>gdrive/tokens/</code>. They expire after 7 days.</li>
+      <li><b>Two chat tabs</b>One tab kept as Terrance for rows 12–19, and a second tab for everyone else. Switching person in a tab starts a new chat.</li>
+      <li><b>Drive</b>A browser signed in as Zhao, open on the folder <code>INC-PAY-001 shared with PayProcessor</code>.</li>
+      <li><b>One server only</b>No teammate runs their own server at the same time, or Slack may send <code>/brain</code> to their machine.</li>
+    </ul>
+    <p class="warn">The shared <code>.env</code> points the model at port 8038, which exists only on Shi Han's machine. On the DGX, start the server with the local model on port 8500, as in step A4.</p>
+  </section>
+
+  <section aria-labelledby="partA">
+    <h2 id="partA"><span class="part">A</span>Prepare</h2>
+    <ol class="steps">
+      <li><div class="step-body">
+        <p>In two DGX terminals, go to the repo and activate the environment.</p>
+        <div class="cmd"><pre>cd /home/ai_zhaoheng/ha_confluence && source .venv/bin/activate</pre><button type="button">Copy</button></div>
+      </div></li>
+      <li><div class="step-body">
+        <p>In terminal 1, check that the sign-ins still work. Each should print “Signed in as”.</p>
+        <div class="cmd"><pre>python gdrive/gdrive_cli.py check --as Terrance
+python gdrive/gdrive_cli.py check --as Zhao</pre><button type="button">Copy</button></div>
+      </div></li>
+      <li><div class="step-body">
+        <p>Reset every platform and check Drive. The reset rebuilds the Jira projects, so it takes a few minutes. Wait for “All files are in place.”</p>
+        <div class="cmd"><pre>python -m main_workflow.cli reset
+python gdrive/demo_drive.py check</pre><button type="button">Copy</button></div>
+      </div></li>
+      <li><div class="step-body">
+        <p>Start the server with the local model and leave it running.</p>
+        <div class="cmd"><pre>VLLM_BASE_URL=http://127.0.0.1:8500/v1 VLLM_MODEL=qwen-spec-poc python -m main_workflow.web</pre><button type="button">Copy</button></div>
+      </div></li>
+      <li><div class="step-body">
+        <p>On your laptop, open the tunnel, then open the chat at <code>http://localhost:8090</code> and the console at <code>http://localhost:8090/console</code> side by side.</p>
+        <div class="cmd"><pre>ssh -L 8090:localhost:8090 &lt;dgx-host&gt;</pre><button type="button">Copy</button></div>
+      </div></li>
+      <li><div class="step-body">
+        <p>In the console, wait for “Slack bot connected” under Activity, then press <b>Sync now</b> and <b>Refresh</b>. The chat footer should say “Slack synced” with no asterisk.</p>
+      </div></li>
+    </ol>
+  </section>
+
+  <section aria-labelledby="partB">
+    <h2 id="partB"><span class="part">B</span>Live run</h2>
+    <div class="order" aria-label="Ticket order">Create tickets in this order: <span>PAY-100</span>→<span>ACC-41</span>→<span>PAY-101</span>→<span>FIN-21</span></div>
+    <p class="note">The Slack messages mention these numbers, so the order matters. Run the <code>play</code> commands in terminal 2. In the chat, pick the person from the sign-in dropdown. Terrance asks in his own chat tab and never switches person there: row 18 removes his earlier answer from that same chat. Terrance can ask with <code>/brain</code> in Slack instead, when someone is signed in to Slack as Terrance; the answers are the same.</p>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>#</th><th>Where</th><th>Do</th><th>Expect</th></tr></thead>
+        <tbody>
+          <tr class="group"><td colspan="4">Report, ticket and vendor access</td></tr>
+          <tr><td class="num">1</td><td class="where">Terminal 2</td><td><code>python slack_demo/slack_cli.py play 1</code></td><td class="expect">The 14:07 deploy notice and Terrance's timeout report appear in Slack</td></tr>
+          <tr><td class="num">2</td><td class="where">Chat as Zhao</td><td class="say">“Create a PAY ticket for INC-PAY-001: payment timeouts reported by the processor, assigned to ShiHan.”<br>Then <b>Create in Jira</b>.</td><td class="expect">Created <span class="tk">PAY-100</span></td></tr>
+          <tr><td class="num">3</td><td class="where">Terminal 2</td><td><code>python slack_demo/slack_cli.py play 2 3</code></td><td class="expect">Incident channel opens; Terrance asks for folder access</td></tr>
+          <tr><td class="num">4</td><td class="where">Chat as Sheldon</td><td class="say">“Create an ACC ticket for temporary vendor access for Terrance to the INC-PAY-001 Drive folder.”</td><td class="expect">Created <span class="tk">ACC-41</span></td></tr>
+          <tr><td class="num">5</td><td class="where">Console</td><td><span class="chip c4">4 setup</span>Drive card: pick <b>Terrance</b> and <b>Editor</b> in the two dropdowns, then <b>Share</b></td><td class="expect">In the access overview, Terrance's cell for the processor folder changes to Edit and is highlighted</td></tr>
+          <tr><td class="num">6</td><td class="where">Console</td><td>Drive card: <b>Step 3: Terrance uploads the timeout log</b></td><td class="expect">The file appears in Drive, owned by Terrance</td></tr>
+
+          <tr class="group"><td colspan="4"><span class="chip c1">Scenario 1</span>Unified query</td></tr>
+          <tr><td class="num">7</td><td class="where">Chat as ShiHan</td><td class="say">“PAY-100: what changed recently on payment-service, what does the runbook say for timeouts, and what has the processor reported?”</td><td class="expect">One answer citing Jira, Slack, Drive and Confluence; the 14:07 rollout is the likely cause</td></tr>
+
+          <tr class="group"><td colspan="4">Rollback and incident report</td></tr>
+          <tr><td class="num">8</td><td class="where">Chat as ShiHan</td><td class="say">“Create a PAY ticket to roll back the 14:07 connection-limit change.”</td><td class="expect">Created <span class="tk">PAY-101</span></td></tr>
+          <tr><td class="num">9</td><td class="where">Terminal 2</td><td><code>python slack_demo/slack_cli.py play 5 6</code></td><td class="expect">Ivan approves; rollback at 14:37; recovery at 15:02</td></tr>
+          <tr><td class="num">10</td><td class="where">Console</td><td><span class="chip c3">3 setup</span>Confluence card: <b>Step 6: Ivan publishes the incident report (restricted)</b>, then open <b>Document-level access</b> under the access overview</td><td class="expect">Only ShiHan, Zhao and Ivan can open the report (a page restriction, so it shows per document, not in the overview)</td></tr>
+
+          <tr class="group"><td colspan="4"><span class="chip c2">Scenario 2</span>Freshness</td></tr>
+          <tr><td class="num">11</td><td class="where">Console</td><td>Drive card: <b>Step 7: Terrance uploads the settlement export</b></td><td class="expect">File appears in the processor folder</td></tr>
+          <tr><td class="num">12</td><td class="where">Terrance's tab</td><td class="say">“Reconcile the failed payments for INC-PAY-001 against Company A's payment records.”</td><td class="expect">Cites only Terrance's two Drive files: 1,312 failed, none settled. No retry figure; Company A's records listed as missing</td></tr>
+          <tr><td class="num">13</td><td class="where">Terminal 2</td><td><code>python slack_demo/slack_cli.py play 7</code></td><td class="expect">Sheldon says he is sharing Company A's payment records</td></tr>
+          <tr><td class="num">14</td><td class="where">Console</td><td>Drive card: <b>Step 7: Sheldon's payment records copy</b></td><td class="expect">File appears, owned by Sheldon</td></tr>
+          <tr><td class="num">15</td><td class="where">Second tab, as Sheldon</td><td class="say">“Create a FIN ticket to reconcile the failed payments for INC-PAY-001.”</td><td class="expect">Created <span class="tk">FIN-21</span></td></tr>
+          <tr><td class="num">16</td><td class="where">Terrance's tab</td><td>Ask the same question again</td><td class="expect">1,312 timed out, 214 retried successfully, no duplicate charges</td></tr>
+
+          <tr class="group"><td colspan="4"><span class="chip c4">Scenario 4</span>Live revocation</td></tr>
+          <tr><td class="num">17</td><td class="where">Terminal 2</td><td><code>python slack_demo/slack_cli.py play 8</code></td><td class="expect">Zhao asks to remove the vendor's access; Sheldon agrees</td></tr>
+          <tr><td class="num">18</td><td class="where">Console, then Terrance's tab</td><td>Drive card: pick <b>Terrance</b>, then <b>Unshare</b>. Then in Terrance's tab: <span class="say">“Which of the failed payments were retried?”</span></td><td class="expect">“Earlier answers were removed”; the 214 figure is gone. Terrance still sees the files he uploaded himself</td></tr>
+
+          <tr class="group"><td colspan="4"><span class="chip c3">Scenario 3</span>Permission enforcement</td></tr>
+          <tr><td class="num">19</td><td class="where">Both tabs</td><td class="say">“Was this a security breach? Show me the incident report for INC-PAY-001.”<br><span style="font-style:normal">Ask in Terrance's tab, then as Ivan and ShiHan in the second tab.</span></td><td class="expect">Terrance gets a neutral reply with no hint the report exists; Ivan and ShiHan get the report</td></tr>
+
+          <tr class="group"><td colspan="4"><span class="chip c5">Scenario 5</span>Audit inquiry</td></tr>
+          <tr><td class="num">20</td><td class="where">Chat as Elson</td><td>Optional: ask to create a ticket</td><td class="expect">Refused</td></tr>
+          <tr><td class="num">21</td><td class="where">Chat as Elson</td><td>Audit tab: event <code>action_executed</code>, then user Terrance, then <b>Verify chain</b></td><td class="expect">The four tickets; Terrance's allowed and denied access, the removed answer, the denied report; chain intact</td></tr>
+
+          <tr class="group"><td colspan="4"><span class="chip c2">Optional</span>Runbook update</td></tr>
+          <tr><td class="num">22</td><td class="where">Console and chat</td><td><b>Publish runbook update</b>; ShiHan asks for the recovery procedure; then <b>Restore original runbook</b></td><td class="expect">The answer cites runbook v2 with the standby-region step</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section aria-labelledby="partD">
+    <h2 id="partD"><span class="part">Video</span>Recording the Slack conversations</h2>
+    <p class="note">Records every message the demo posts to Slack. Watch Slack as Zhao: Zhao is a member of all three demo channels, and each message is posted as the person who says it, so names and avatars appear correctly.</p>
+    <ol class="steps">
+      <li><div class="step-body">
+        <p>On your laptop, open Slack at <code>https://companya-civ9707.slack.com</code> signed in as Zhao, on one half of the screen. Put an SSH terminal to the DGX on the other half.</p>
+      </div></li>
+      <li><div class="step-body">
+        <p>Clear the demo channels. This deletes every message and keeps the members. If the web server is not running, also rebuild the search index so the chat forgets the deleted messages.</p>
+        <div class="cmd"><pre>cd /home/ai_zhaoheng/ha_confluence && source .venv/bin/activate
+python slack_demo/slack_cli.py reset
+python -m main_workflow.sync --once --full   # only if the web server is not running</pre><button type="button">Copy</button></div>
+      </div></li>
+      <li><div class="step-body">
+        <p>Start recording on your laptop: Win+Alt+R (Windows), Cmd+Shift+5 (macOS), or OBS Studio. Then run each step and open the channel it posts to. Pause 3–5 seconds after each step so viewers can read.</p>
+      </div></li>
+    </ol>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Command</th><th>Channel to show</th><th>What appears</th></tr></thead>
+        <tbody>
+          <tr><td><code>python slack_demo/slack_cli.py play 1</code></td><td class="where"><code>#payments</code>, then <code>#vendor-payprocessor</code></td><td class="expect">Deploy-bot's 14:07 rollout notice; Terrance reports the timeouts and Zhao replies</td></tr>
+          <tr><td><code>python slack_demo/slack_cli.py play 2</code></td><td class="where"><code>#payment-incident-001</code></td><td class="expect">Zhao opens INC-PAY-001, tracked in <span class="tk">PAY-100</span></td></tr>
+          <tr><td><code>python slack_demo/slack_cli.py play 3</code></td><td class="where"><code>#vendor-payprocessor</code></td><td class="expect">Zhao asks for the timeout logs; Sheldon sets up temporary access</td></tr>
+          <tr><td><code>python slack_demo/slack_cli.py play 5</code></td><td class="where"><code>#payment-incident-001</code></td><td class="expect">ShiHan names the likely cause and opens <span class="tk">PAY-101</span>; Ivan approves</td></tr>
+          <tr><td><code>python slack_demo/slack_cli.py play 6</code></td><td class="where"><code>#payment-incident-001</code></td><td class="expect">15:02: rollback complete and payments recovered</td></tr>
+          <tr><td><code>python slack_demo/slack_cli.py play 7</code></td><td class="where"><code>#vendor-payprocessor</code></td><td class="expect">Terrance asks Sheldon for Company A's records; Sheldon shares a copy, tracked in <span class="tk">FIN-21</span></td></tr>
+          <tr><td><code>python slack_demo/slack_cli.py play 8</code></td><td class="where"><code>#payments</code></td><td class="expect">Zhao says the processor can still open the records copy; Sheldon removes the access</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note">There is no step 4: that is the chat diagnosis, not a Slack message. Slack timestamps show the real posting time; the story's times (14:07, 14:10, 14:37, 15:02) are in the message text. After recording, run <code>python slack_demo/slack_cli.py reset</code> again before a full demo, and make sure nobody else runs <code>play</code> or <code>reset</code> at the same time.</p>
+  </section>
+
+  <section aria-labelledby="partC">
+    <h2 id="partC"><span class="part">C</span>After the run</h2>
+    <div class="two">
+      <div>
+        <h3>Reset for the next rehearsal</h3>
+        <p class="note">Stop the server with Ctrl+C, then reset. With the server stopped, the reset also clears the audit trail and search index.</p>
+        <div class="cmd"><pre>python -m main_workflow.cli reset</pre><button type="button">Copy</button></div>
+      </div>
+      <div>
+        <h3>If something goes wrong</h3>
+        <dl>
+          <dt>An upload is refused</dt><dd>Terrance is not shared as Editor yet (row 5), or a sign-in expired. Check with <code>python gdrive/gdrive_cli.py check --as &lt;Name&gt;</code>.</dd>
+          <dt>A sign-in has expired</dt><dd>Run <code>python gdrive/gdrive_cli.py login &lt;Name&gt;</code> with that account.</dd>
+          <dt>Ticket numbers do not match</dt><dd>A ticket was created out of order. Reset and start again.</dd>
+          <dt>Timing</dt><dd>Answers take 4–8 seconds, ticket drafts about 10, uploads and the report 5–10 each.</dd>
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="fixes">
+    <h2 id="fixes"><span class="part">Fixes</span>Fixes made on the DGX</h2>
+    <p class="note">Changes made while getting the demo to run on the DGX, on the <code>feat/slack-integration</code> branch. None of them is committed yet.</p>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Problem</th><th>Fix</th><th>Files</th></tr></thead>
+        <tbody>
+          <tr><td>The shared <code>.env</code> points the model at port 8038, which exists only on Shi Han's machine</td><td>Start the server with the local Qwen model on port 8500 through <code>VLLM_BASE_URL</code> and <code>VLLM_MODEL</code> in the start command. The shared <code>.env</code> is unchanged</td><td class="expect">None (start command only)</td></tr>
+          <tr><td>Ticket requests got a normal answer instead of a draft card: Qwen chose not to call the ticket tool</td><td>For messages that ask to create a ticket, the tool call is now required. Normal questions are never offered the tool, so they are unaffected</td><td class="expect"><code>main_workflow/llm.py</code>, <code>main_workflow/pipeline.py</code></td></tr>
+          <tr><td>Terrance's reconcile answers did not say clearly that Company A's records were missing, or that the reconciliation was complete</td><td>Every answer now starts with an <b>Answer</b> line. For tasks such as reconcile, compare or check, it says whether the task could be completed and names what is missing. The chat shows it as its own section</td><td class="expect"><code>main_workflow/pipeline.py</code>, <code>static/common.js</code>, <code>static/app.css</code></td></tr>
+          <tr><td>Sheldon's old Google account could not sign in, so Zhao uploaded his files</td><td>Sheldon's <code>google_email</code> is now <code>britanniagbr@gmail.com</code>; his folders are shared with it and the old address is removed. Sheldon signed in, his six files were re-uploaded as him, and the Zhao stand-in entry is removed</td><td class="expect"><code>identities.json</code> (local only), <code>gdrive/demo_drive.json</code>, <code>docs/DEMO_PLAN.md</code>, <code>gdrive/SETUP.md</code>, <code>gdrive/README.md</code>, <code>main_workflow/README.md</code>, <code>static/console.html</code></td></tr>
+          <tr><td>The console's left panel checked every document for every person: slow, and too detailed to read during a demo</td><td>New <b>Access overview</b>: each person's role per Confluence space, Jira project (and the PAY Security level), Slack channel, Drive folder, and the audit role, read live from each platform. It refreshes after every Add, Remove, Share, Unshare, role change and reset, and highlights cells that changed. The document grid is collapsed under <b>Document-level access</b> and loads only when opened</td><td class="expect"><code>main_workflow/web.py</code> (<code>/api/console/overview</code>), <code>static/console.html</code>, <code>static/console.js</code>, <code>static/app.css</code></td></tr>
+          <tr><td>The flow image showed old ticket numbers</td><td>Regenerated with the team's keys from <code>docs/DEMO_PLAN.md</code></td><td class="expect"><code>incident_demo_flow.png</code></td></tr>
+          <tr><td>The run sheet needed exact console labels and a way to run Terrance's steps without his Slack sign-in</td><td>Console steps use the real button labels; Terrance asks in his own web chat tab; added the Slack recording guide and this status. A copy is kept in the repo</td><td class="expect"><code>docs/demo_run_sheet.html</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h3 class="sub">Local setup on the DGX (not code)</h3>
+    <ul class="checks">
+      <li><b>Branch</b>Switched to <code>feat/slack-integration</code>. Earlier local files are backed up in <code>~/ha_backup/</code>.</li>
+      <li><b>Python environment</b>Created with <code>uv sync</code> in <code>.venv/</code>, which adds the Slack libraries.</li>
+      <li><b>Google sign-ins</b><code>gdrive/oauth_client.json</code> and all five persona sign-ins in <code>gdrive/tokens/</code>, readable only by the owner and ignored by Git.</li>
+      <li><b>Identities</b><code>main_workflow/identities.json</code> holds the real addresses and stays out of Git.</li>
+    </ul>
+  </section>
+</div>
+
+<script>
+document.querySelectorAll(".cmd button").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const pre = btn.previousElementSibling;
+    const text = pre.textContent;
+    const done = () => { btn.textContent = "Copied"; setTimeout(() => { btn.textContent = "Copy"; }, 1500); };
+    const select = () => {
+      const range = document.createRange();
+      range.selectNodeContents(pre);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+      btn.textContent = "Selected";
+      setTimeout(() => { btn.textContent = "Copy"; }, 1500);
+    };
+    try {
+      navigator.clipboard.writeText(text).then(done, select);
+    } catch (e) {
+      select();
+    }
+  });
+});
+</script>
+
+</body>
+</html>

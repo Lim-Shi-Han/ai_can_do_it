@@ -28,7 +28,12 @@ Rules:
 - You cannot change anything yourself. Never say you created or changed anything.
 - Questions are always answered in text, including questions about existing tickets such as PAY-100. Call create_jira_ticket only when the user explicitly asks you to create, open, raise, or log a new ticket; it only drafts the ticket for the user to confirm.
 
-Write the answer under three headings: Confirmed, Unconfirmed or provisional, Missing. Write "None." under a heading with nothing to report."""
+Start with a heading Answer: one or two sentences that answer the question directly, with source tags.
+When the question asks for a task (reconcile, compare, match, check, confirm), say there whether the sources are enough to complete it.
+If they are, say plainly that it is complete and give the result. If they are not, say it cannot be completed yet and name what is missing,
+using only what the sources themselves say is needed (for example, the other side's records), and list that under Missing.
+
+Then write three headings: Confirmed, Unconfirmed or provisional, Missing. Write "None." under a heading with nothing to report."""
 
 
 @dataclass
@@ -149,7 +154,9 @@ def run(question, user_name, sources, audit, identities=None, index=None, memory
         if allow_actions and "jira" in sources and actions.asks_for_ticket(question):
             people = sorted(name for name, u in identities.items() if u.get("atlassian_account_id"))
             tools = [actions.ticket_tool(sources["jira"].projects, people)]
-        reply = llm.complete(messages, tools=tools)
+        # the router only offers the tool for explicit ticket requests, so the call is required there:
+        # left optional, some models (the local Qwen) answer in text instead of drafting the ticket
+        reply = llm.complete(messages, tools=tools, tool_choice="required" if tools else None)
         call = next((c["function"] for c in reply.get("tool_calls") or []
                      if c["function"]["name"] == actions.TOOL_NAME), None)
         if call:

@@ -23,7 +23,7 @@ def chat(messages, max_tokens=900):
     return content.strip()
 
 
-def complete(messages, max_tokens=900, tools=None):
+def complete(messages, max_tokens=900, tools=None, tool_choice=None):
     """One chat completion. Returns the reply message: its content, and its tool_calls when tools are offered."""
     payload = {
         "model": MODEL,
@@ -32,6 +32,7 @@ def complete(messages, max_tokens=900, tools=None):
         "max_tokens": max_tokens,
         "chat_template_kwargs": {"enable_thinking": False},
         **({"tools": tools} if tools else {}),
+        **({"tool_choice": tool_choice} if tools and tool_choice else {}),
     }
     request = urllib.request.Request(
         BASE_URL.rstrip("/") + "/chat/completions",

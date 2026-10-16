@@ -154,9 +154,11 @@ def run(question, user_name, sources, audit, identities=None, index=None, memory
         if allow_actions and "jira" in sources and actions.asks_for_ticket(question):
             people = sorted(name for name, u in identities.items() if u.get("atlassian_account_id"))
             tools = [actions.ticket_tool(sources["jira"].projects, people)]
-        # the router only offers the tool for explicit ticket requests, so the call is required there:
-        # left optional, some models (the local Qwen) answer in text instead of drafting the ticket
-        reply = llm.complete(messages, tools=tools, tool_choice="required" if tools else None)
+        # the router only offers the tool for explicit ticket requests, so the call is forced there:
+        # left optional, the local Qwen answers in text instead; with "required" it can run to the token
+        # limit without finishing a call, so the tool is named instead
+        forced = {"type": "function", "function": {"name": actions.TOOL_NAME}} if tools else None
+        reply = llm.complete(messages, tools=tools, tool_choice=forced)
         call = next((c["function"] for c in reply.get("tool_calls") or []
                      if c["function"]["name"] == actions.TOOL_NAME), None)
         if call:

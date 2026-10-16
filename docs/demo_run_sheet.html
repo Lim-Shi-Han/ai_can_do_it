@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<!-- Copy of https://claude.ai/artifact/2MVNKs9NNKxRLNX1ptHMFB (version 6) -->
+<!-- Copy of https://claude.ai/artifact/2MVNKs9NNKxRLNX1ptHMFB (version 9) -->
 <title>INC-PAY-001 Run Sheet</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -123,7 +123,7 @@ h3.sub { font: 700 15px/1.3 var(--font-display); margin: 4px 0 0; }
           <tr><td>Architecture and trust-boundary diagram</td><td class="status"><span class="pill todo">Not started</span></td><td class="expect">Sources, permission gate, search index, model, audit trail, Slack bot, console</td></tr>
           <tr><td>Presentation deck</td><td class="status"><span class="pill todo">Not started</span></td><td class="expect">Open by naming FinTech / Aspire: The Internal Brain as the chosen case</td></tr>
           <tr><td>Live demo walkthrough or video</td><td class="status"><span class="pill doing">In progress</span></td><td class="expect">Run sheet and Slack recording guide ready; no full recording yet</td></tr>
-          <tr><td>Source code on GitHub</td><td class="status"><span class="pill doing">In progress</span></td><td class="expect"><code>feat/slack-integration</code> is 6 commits ahead of <code>main</code> and not merged; the DGX fixes below are not committed</td></tr>
+          <tr><td>Source code on GitHub</td><td class="status"><span class="pill doing">In progress</span></td><td class="expect">The DGX fixes are pushed to <code>slack-integration-v2</code> (commit <code>df4dc54</code>), on top of <code>feat/slack-integration</code>. Neither branch is merged into <code>main</code> yet: open a pull request and agree which branch the submission uses</td></tr>
         </tbody>
       </table>
     </div>
@@ -132,14 +132,15 @@ h3.sub { font: 700 15px/1.3 var(--font-display); margin: 4px 0 0; }
       <table>
         <thead><tr><th>Item</th><th>Status</th><th>What is left</th></tr></thead>
         <tbody>
-          <tr><td>Fixes made on the DGX (last section)</td><td class="status"><span class="pill todo">Uncommitted</span></td><td class="expect">Commit and push once the team agrees; the DGX demo depends on them</td></tr>
+          <tr><td>Fixes made on the DGX (last section)</td><td class="status"><span class="pill done">Pushed</span></td><td class="expect">Committed as <code>df4dc54</code> and pushed to <code>slack-integration-v2</code>. Still to do: the team reviews it in a pull request</td></tr>
           <tr><td><code>jira/issue_manifest.json</code>, <code>confluence/page_manifest.json</code></td><td class="status"><span class="pill todo">Decide</span></td><td class="expect">Rewritten by the resets; snapshots only, so commit or discard with the team</td></tr>
           <tr><td>Sheldon's Drive sign-in for teammates</td><td class="status"><span class="pill todo">To share</span></td><td class="expect">Anyone else running the demo needs <code>gdrive/tokens/Sheldon.json</code> (sent privately) and Sheldon's new <code>google_email</code> in their <code>identities.json</code></td></tr>
           <tr><td>Docs that contradict the current state</td><td class="status"><span class="pill todo">To fix</span></td><td class="expect"><code>main_workflow/README.md</code> still lists Slack as a stand-in; <code>docs/DEMO_PLAN.md</code> has three items marked open that are done or obsolete</td></tr>
           <tr><td>Ivan's role</td><td class="status"><span class="pill todo">To fix</span></td><td class="expect">"security engineer" in <code>identities.json</code> and <code>identities.example.json</code>; the story makes him the security manager</td></tr>
           <tr><td>Sign-in is a dropdown that switches person</td><td class="status"><span class="pill todo">Check with team</span></td><td class="expect">The chat's "Demo sign-in" only stands in for single sign-on. Agree with the team whether to keep it (and present it as a trade-off) or add a real sign-in before the submission</td></tr>
-          <tr><td>Console access panel was too detailed</td><td class="status"><span class="pill done">Done</span></td><td class="expect">Replaced by a per-source access overview (role per space, project, channel and folder), read live and refreshed after every change on the right; the per-document grid is now collapsed. Not committed</td></tr>
-          <tr><td><code>incident_demo_flow.png</code></td><td class="status"><span class="pill done">Done</span></td><td class="expect">Regenerated with the team's ticket keys (ACC-41, FIN-21, PAY-102 to PAY-104); not committed</td></tr>
+          <tr><td>Demo questions as presets in the chat</td><td class="status"><span class="pill todo">To do</span></td><td class="expect">Add the run sheet's chat inputs (the PAY-100, ACC-41, PAY-101 and FIN-21 ticket requests, ShiHan's diagnosis question, Terrance's reconcile, retry and incident report questions) to the chat's preset suggestions, shown for the person who asks them, so the presenter clicks instead of typing. Not started</td></tr>
+          <tr><td>Console access panel was too detailed</td><td class="status"><span class="pill done">Done</span></td><td class="expect">Replaced by a per-source access overview (role per space, project, channel and folder), read live and refreshed after every change on the right; the per-document grid is now collapsed. Pushed in <code>slack-integration-v2</code></td></tr>
+          <tr><td><code>incident_demo_flow.png</code></td><td class="status"><span class="pill done">Done</span></td><td class="expect">Regenerated with the team's ticket keys (ACC-41, FIN-21, PAY-102 to PAY-104). Pushed in <code>slack-integration-v2</code></td></tr>
         </tbody>
       </table>
     </div>
@@ -300,13 +301,13 @@ python -m main_workflow.sync --once --full   # only if the web server is not run
 
   <section aria-labelledby="fixes">
     <h2 id="fixes"><span class="part">Fixes</span>Fixes made on the DGX</h2>
-    <p class="note">Changes made while getting the demo to run on the DGX, on the <code>feat/slack-integration</code> branch. None of them is committed yet.</p>
+    <p class="note">Changes made while getting the demo to run on the DGX. All code and doc changes below are committed as <code>df4dc54</code> on the branch <code>slack-integration-v2</code> (built on <code>feat/slack-integration</code>) and pushed to GitHub. Not in the commit: the two manifests rewritten by the resets, the local smoke test, and everything Git ignores (<code>.env</code>, <code>identities.json</code>, Google sign-ins).</p>
     <div class="table-scroll">
       <table>
         <thead><tr><th>Problem</th><th>Fix</th><th>Files</th></tr></thead>
         <tbody>
           <tr><td>The shared <code>.env</code> points the model at port 8038, which exists only on Shi Han's machine</td><td>Start the server with the local Qwen model on port 8500 through <code>VLLM_BASE_URL</code> and <code>VLLM_MODEL</code> in the start command. The shared <code>.env</code> is unchanged</td><td class="expect">None (start command only)</td></tr>
-          <tr><td>Ticket requests got a normal answer instead of a draft card: Qwen chose not to call the ticket tool</td><td>For messages that ask to create a ticket, the tool call is now required. Normal questions are never offered the tool, so they are unaffected</td><td class="expect"><code>main_workflow/llm.py</code>, <code>main_workflow/pipeline.py</code></td></tr>
+          <tr><td>Ticket requests got a normal answer instead of a draft card: Qwen chose not to call the ticket tool</td><td>For messages that ask to create a ticket, the model is now told to call the ticket tool by name. A first version used "required" mode, but the local model then ran to its output limit without finishing the call ("vLLM returned an empty answer", seen on Sheldon's FIN ticket); naming the tool fixed it. Normal questions are never offered the tool, so they are unaffected. The naming fix is not yet committed</td><td class="expect"><code>main_workflow/llm.py</code>, <code>main_workflow/pipeline.py</code></td></tr>
           <tr><td>Terrance's reconcile answers did not say clearly that Company A's records were missing, or that the reconciliation was complete</td><td>Every answer now starts with an <b>Answer</b> line. For tasks such as reconcile, compare or check, it says whether the task could be completed and names what is missing. The chat shows it as its own section</td><td class="expect"><code>main_workflow/pipeline.py</code>, <code>static/common.js</code>, <code>static/app.css</code></td></tr>
           <tr><td>Sheldon's old Google account could not sign in, so Zhao uploaded his files</td><td>Sheldon's <code>google_email</code> is now <code>britanniagbr@gmail.com</code>; his folders are shared with it and the old address is removed. Sheldon signed in, his six files were re-uploaded as him, and the Zhao stand-in entry is removed</td><td class="expect"><code>identities.json</code> (local only), <code>gdrive/demo_drive.json</code>, <code>docs/DEMO_PLAN.md</code>, <code>gdrive/SETUP.md</code>, <code>gdrive/README.md</code>, <code>main_workflow/README.md</code>, <code>static/console.html</code></td></tr>
           <tr><td>The console's left panel checked every document for every person: slow, and too detailed to read during a demo</td><td>New <b>Access overview</b>: each person's role per Confluence space, Jira project (and the PAY Security level), Slack channel, Drive folder, and the audit role, read live from each platform. It refreshes after every Add, Remove, Share, Unshare, role change and reset, and highlights cells that changed. The document grid is collapsed under <b>Document-level access</b> and loads only when opened</td><td class="expect"><code>main_workflow/web.py</code> (<code>/api/console/overview</code>), <code>static/console.html</code>, <code>static/console.js</code>, <code>static/app.css</code></td></tr>
